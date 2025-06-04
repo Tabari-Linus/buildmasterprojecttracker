@@ -27,8 +27,8 @@ public class Project {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    @Size(max = 500, message = "Description must not exceed 500 characters")
-    @Column(name = "description", length = 500)
+    @Size(max = 2000, message = "Description must not exceed 500 characters")
+    @Column(name = "description", length = 2000)
     private String description;
 
     @NotNull(message = "Deadline is required")
