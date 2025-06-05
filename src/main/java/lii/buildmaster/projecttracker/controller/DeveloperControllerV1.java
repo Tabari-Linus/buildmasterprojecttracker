@@ -21,12 +21,12 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/developers")
-public class DeveloperController {
+public class DeveloperControllerV1 {
 
     private final DeveloperService developerService;
     private final DeveloperMapper developerMapper;
 
-    public DeveloperController(DeveloperService developerService, DeveloperMapper developerMapper) {
+    public DeveloperControllerV1(DeveloperService developerService, DeveloperMapper developerMapper) {
         this.developerService = developerService;
         this.developerMapper = developerMapper;
     }
@@ -60,8 +60,8 @@ public class DeveloperController {
         return ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/email/{email}")
-    public ResponseEntity<DeveloperResponseDto> getDeveloperByEmail(@PathVariable String email) {
+    @GetMapping("/email")
+    public ResponseEntity<DeveloperResponseDto> getDeveloperByEmail(@RequestParam String email) {
         Optional<Developer> developer = developerService.getDeveloperByEmail(email);
 
         if (developer.isPresent()) {
@@ -134,8 +134,8 @@ public class DeveloperController {
         return ResponseEntity.ok(developerDtos);
     }
 
-    @GetMapping("/skill/{skill}")
-    public ResponseEntity<List<DeveloperSummaryDto>> findDevelopersBySkill(@PathVariable String skill) {
+    @GetMapping("/skill")
+    public ResponseEntity<List<DeveloperSummaryDto>> findDevelopersBySkill(@RequestParam String skill) {
         List<Developer> developers = developerService.findDevelopersBySkill(skill);
         List<DeveloperSummaryDto> developerDtos = developers.stream()
                 .map(developerMapper::toSummaryDto)
@@ -144,8 +144,8 @@ public class DeveloperController {
         return ResponseEntity.ok(developerDtos);
     }
 
-    @GetMapping("/email-check/{email}")
-    public ResponseEntity<java.util.Map<String, Object>> checkEmailAvailability(@PathVariable String email) {
+    @GetMapping("/email-check")
+    public ResponseEntity<java.util.Map<String, Object>> checkEmailAvailability(@RequestParam String email) {
         boolean isTaken = developerService.isEmailTaken(email);
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("email", email);
