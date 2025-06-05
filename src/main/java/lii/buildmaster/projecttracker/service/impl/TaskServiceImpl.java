@@ -1,4 +1,4 @@
-package lii.buildmaster.projecttracker.service;
+package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Project;
@@ -7,6 +7,7 @@ import lii.buildmaster.projecttracker.model.enums.TaskStatus;
 import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
 import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
 import lii.buildmaster.projecttracker.repository.jpa.TaskRepository;
+import lii.buildmaster.projecttracker.service.TaskService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
