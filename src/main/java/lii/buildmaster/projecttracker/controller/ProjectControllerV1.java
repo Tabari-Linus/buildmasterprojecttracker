@@ -6,7 +6,6 @@ import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
 import lii.buildmaster.projecttracker.model.dto.summary.ProjectSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
-import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
 import jakarta.validation.Valid;
 import lii.buildmaster.projecttracker.service.ProjectService;
 import org.springframework.data.domain.Page;
@@ -23,19 +22,14 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/projects")
-public class ProjectController {
+public class ProjectControllerV1 {
 
     private final ProjectService projectService;
     private final ProjectMapper projectMapper;
 
-    public ProjectController(ProjectService projectService, ProjectMapper projectMapper) {
+    public ProjectControllerV1(ProjectService projectService, ProjectMapper projectMapper) {
         this.projectService = projectService;
         this.projectMapper = projectMapper;
-    }
-
-    @GetMapping
-    public List<Project> getAllProjects() {
-        return projectService.getAllProjects();
     }
 
     @GetMapping
