@@ -1,9 +1,10 @@
-package lii.buildmaster.projecttracker.service;
+package lii.buildmaster.projecttracker.service.impl;
 
 
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
+import lii.buildmaster.projecttracker.service.ProjectService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
