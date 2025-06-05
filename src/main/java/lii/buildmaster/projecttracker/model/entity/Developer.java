@@ -7,13 +7,18 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.springframework.data.domain.Auditable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "developers")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Developer {
+public class Developer extends AuditableEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,10 +39,23 @@ public class Developer {
     @Column(name = "skills", length = 500)
     private String skills;
 
+    @OneToMany(mappedBy = "developer", cascade = CascadeType.DETACH, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private List<Task> assignedTasks = new ArrayList<>();
 
     public Developer(String name, String email, String skills) {
         this.name = name;
         this.email = email;
         this.skills = skills;
+    }
+
+    public void assignTask(Task task) {
+        assignedTasks.add(task);
+        task.setDeveloper(this);
+    }
+
+    public void unassignTask(Task task) {
+        assignedTasks.remove(task);
+        task.setDeveloper(null);
     }
 }

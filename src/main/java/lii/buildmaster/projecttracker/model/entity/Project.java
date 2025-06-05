@@ -8,15 +8,18 @@ import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "projects")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Project {
+public class Project extends AuditableEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,11 +43,24 @@ public class Project {
     @Column(name = "status", nullable = false, length = 20)
     private ProjectStatus status;
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private List<Task> tasks = new ArrayList<>();
 
     public Project(String name, String description, LocalDateTime deadline, ProjectStatus status) {
         this.name = name;
         this.description = description;
         this.deadline = deadline;
         this.status = status;
+    }
+
+    public void addTask(Task task) {
+        tasks.add(task);
+        task.setProject(this);
+    }
+
+    public void removeTask(Task task) {
+        tasks.remove(task);
+        task.setProject(null);
     }
 }
