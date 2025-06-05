@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lii.buildmaster.projecttracker.mapper.ProjectMapper;
 import lii.buildmaster.projecttracker.model.dto.request.ProjectRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/projects")
+@Tag(name = "Projects", description = "Project management operations including CRUD, search, and analytics")
 public class ProjectControllerV1 {
 
     private final ProjectService projectService;
