@@ -1,15 +1,19 @@
 package lii.buildmaster.projecttracker.config;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class SwaggerConfig {
@@ -40,5 +44,26 @@ public class SwaggerConfig {
                         new Tag()
                                 .name("Health")
                                 .description("Application health and status endpoints")));
+    }
+
+    @Bean
+    public CacheManager cacheManager() {
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+
+        cacheManager.setCaffeine(Caffeine.newBuilder()
+                .maximumSize(1000)
+                .expireAfterWrite(30, TimeUnit.MINUTES)
+                .recordStats());
+
+        cacheManager.setCacheNames(List.of(
+                "projects",
+                "developers",
+                "tasks",
+                "projectStats",
+                "developerStats",
+                "taskStats"
+        ));
+
+        return cacheManager;
     }
 }
