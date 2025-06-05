@@ -108,8 +108,8 @@ public class ProjectControllerV1 {
         }
     }
 
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<ProjectSummaryDto>> getProjectsByStatus(@PathVariable ProjectStatus status) {
+    @GetMapping("/status")
+    public ResponseEntity<List<ProjectSummaryDto>> getProjectsByStatus(@RequestParam ProjectStatus status) {
         List<Project> projects = projectService.getProjectsByStatus(status);
         List<ProjectSummaryDto> projectDtos = projects.stream()
                 .map(projectMapper::toSummaryDto)
