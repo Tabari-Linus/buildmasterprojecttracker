@@ -24,12 +24,12 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
-public class TaskController {
+public class TaskControllerV1 {
 
     private final TaskService taskService;
     private final TaskMapper taskMapper;
 
-    public TaskController(TaskService taskService, TaskMapper taskMapper) {
+    public TaskControllerV1(TaskService taskService, TaskMapper taskMapper) {
         this.taskService = taskService;
         this.taskMapper = taskMapper;
     }
