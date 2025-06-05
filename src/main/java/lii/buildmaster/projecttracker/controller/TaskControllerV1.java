@@ -192,8 +192,8 @@ public class TaskControllerV1 {
         return ResponseEntity.ok(taskDtos);
     }
 
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<TaskSummaryDto>> getTasksByStatus(@PathVariable TaskStatus status) {
+    @GetMapping("/status")
+    public ResponseEntity<List<TaskSummaryDto>> getTasksByStatus(@RequestParam TaskStatus status) {
         List<Task> tasks = taskService.getTasksByStatus(status);
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
