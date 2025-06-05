@@ -1,7 +1,8 @@
-package lii.buildmaster.projecttracker.service;
+package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
+import lii.buildmaster.projecttracker.service.DeveloperService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
