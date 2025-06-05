@@ -52,6 +52,7 @@ public class Project extends AuditableEntity{
         this.description = description;
         this.deadline = deadline;
         this.status = status;
+        this.tasks = new ArrayList<>();
     }
 
     public void addTask(Task task) {
