@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/projects")
-@Tag(name = "Projects", description = "Project management operations including CRUD, search, and analytics")
+@Tag(name = "Projects", description = "Operations for managing projects and performing analysis")
 public class ProjectControllerV1 {
 
     private final ProjectService projectService;
