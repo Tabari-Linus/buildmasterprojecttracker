@@ -26,10 +26,7 @@ public class SwaggerConfig {
                 .servers(List.of(
                         new Server()
                                 .url("http://localhost:8080")
-                                .description("Development server"),
-                        new Server()
-                                .url("https://api.buildmaster.com")
-                                .description("Production server")))
+                                .description("Development server")))
                 .tags(List.of(
                         new Tag()
                                 .name("Projects")
