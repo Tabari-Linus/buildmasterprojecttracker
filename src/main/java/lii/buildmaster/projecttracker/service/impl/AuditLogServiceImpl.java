@@ -1,9 +1,10 @@
-package lii.buildmaster.projecttracker.service;
+package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.model.entity.AuditLog;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
 import lii.buildmaster.projecttracker.repository.mongo.AuditLogRepository;
+import lii.buildmaster.projecttracker.service.AuditLogService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
