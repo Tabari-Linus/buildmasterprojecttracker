@@ -1,4 +1,4 @@
-package lii.buildmaster.projecttracker.controller;
+package lii.buildmaster.projecttracker.controller.vi;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
