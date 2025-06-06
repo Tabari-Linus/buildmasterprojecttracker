@@ -1,8 +1,12 @@
 package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.model.entity.Developer;
+import lii.buildmaster.projecttracker.model.enums.ActionType;
+import lii.buildmaster.projecttracker.model.enums.EntityType;
 import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
+import lii.buildmaster.projecttracker.service.AuditLogService;
 import lii.buildmaster.projecttracker.service.DeveloperService;
+import lii.buildmaster.projecttracker.util.AuditUtil;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -10,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -17,9 +22,14 @@ import java.util.Optional;
 public class DeveloperServiceImpl implements DeveloperService {
 
     private final DeveloperRepository developerRepository;
+    private final AuditLogService auditLogService;
+    private final AuditUtil auditUtil;
 
-    public DeveloperServiceImpl(DeveloperRepository developerRepository) {
+    public DeveloperServiceImpl(DeveloperRepository developerRepository, AuditLogService auditLogService,
+                                AuditUtil auditUtil) {
         this.developerRepository = developerRepository;
+        this.auditLogService = auditLogService;
+        this.auditUtil = auditUtil;
     }
 
     @Override
@@ -34,7 +44,18 @@ public class DeveloperServiceImpl implements DeveloperService {
         }
 
         Developer developer = new Developer(name, email, skills);
-        return developerRepository.save(developer);
+        Developer savedDeveloper = developerRepository.save(developer);
+
+        Map<String, Object> payload = auditUtil.createDeveloperAuditPayload(savedDeveloper);
+        auditLogService.logAction(
+                ActionType.CREATE,
+                EntityType.DEVELOPER,
+                savedDeveloper.getId().toString(),
+                auditUtil.getCurrentActorName(),
+                payload
+        );
+
+        return savedDeveloper;
     }
 
     @Override
@@ -75,11 +96,27 @@ public class DeveloperServiceImpl implements DeveloperService {
             throw new RuntimeException("Email " + email + " is already taken by another developer");
         }
 
+        Map<String, Object> beforeState = auditUtil.createDeveloperAuditPayload(developer);
+
+        String oldEmail = developer.getEmail();
         developer.setName(name);
         developer.setEmail(email);
         developer.setSkills(skills);
 
-        return developerRepository.save(developer);
+        Developer updatedDeveloper = developerRepository.save(developer);
+
+        Map<String, Object> afterState = auditUtil.createDeveloperAuditPayload(updatedDeveloper);
+
+        auditLogService.logAction(
+                ActionType.UPDATE,
+                EntityType.DEVELOPER,
+                updatedDeveloper.getId().toString(),
+                auditUtil.getCurrentActorName(),
+                beforeState,
+                afterState
+        );
+
+        return updatedDeveloper;
     }
 
     @Override
@@ -90,10 +127,21 @@ public class DeveloperServiceImpl implements DeveloperService {
             @CacheEvict(value = "taskStats", allEntries = true)
     })
     public void deleteDeveloper(Long id) {
-        if (!developerRepository.existsById(id)) {
-            throw new RuntimeException("Developer not found with id: " + id);
-        }
-        developerRepository.deleteById(id);
+        Developer developer = developerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Developer not found with id: " + id));
+
+        Map<String, Object> payload = auditUtil.createDeveloperAuditPayload(developer);
+        payload.put("unassignedTasksCount", developer.getAssignedTasks().size());
+
+        developerRepository.delete(developer);
+
+        auditLogService.logAction(
+                ActionType.DELETE,
+                EntityType.DEVELOPER,
+                id.toString(),
+                auditUtil.getCurrentActorName(),
+                payload
+        );
     }
 
     @Override
