@@ -53,14 +53,8 @@ public class ProjectControllerV1 {
 
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponseDto> getProjectById(@PathVariable Long id) {
-        Optional<Project> project = projectServiceImpl.getProjectById(id);
-
-        if (project.isPresent()) {
-            ProjectResponseDto responseDto = projectMapper.toResponseDto(project.get());
-            return ResponseEntity.ok(responseDto);
-        }
-
-        return ResponseEntity.notFound().build();
+        Project project = projectServiceImpl.getProjectById(id);
+        return ResponseEntity.ok(projectMapper.toResponseDto(project));
     }
 
     @PostMapping
