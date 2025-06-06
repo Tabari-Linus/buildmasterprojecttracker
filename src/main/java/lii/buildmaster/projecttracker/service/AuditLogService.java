@@ -18,10 +18,6 @@ public interface AuditLogService {
     AuditLog logAction(ActionType actionType, EntityType entityType, String entityId,
                        String actorName, Map<String, Object> beforeState, Map<String, Object> afterState);
 
-    AuditLog logActionWithContext(ActionType actionType, EntityType entityType, String entityId,
-                                  String actorName, Map<String, Object> payload,
-                                  String ipAddress, String userAgent, String sessionId);
-
     Page<AuditLog> getAllLogs(Pageable pageable);
 
     Page<AuditLog> getLogsByEntityType(EntityType entityType, Pageable pageable);
