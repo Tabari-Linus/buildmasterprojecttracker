@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: buildmaster-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: buildmaster_db
+      POSTGRES_USER: mrlii
+      POSTGRES_PASSWORD: buildmaster@v1
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - buildmaster-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildmaster -d buildmaster_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: buildmaster-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: buildmaster_audit
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - buildmaster-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Spring Boot Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: buildmaster-app
+    restart: unless-stopped
+    environment:
+      # PostgreSQL Configuration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/buildmaster_db
+      SPRING_DATASOURCE_USERNAME: buildmaster
+      SPRING_DATASOURCE_PASSWORD: buildmaster123
+
+      # MongoDB Configuration
+      SPRING_DATA_MONGODB_HOST: mongodb
+      SPRING_DATA_MONGODB_PORT: 27017
+      SPRING_DATA_MONGODB_DATABASE: buildmaster_audit
+
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+      SPRING_JPA_SHOW_SQL: false
+
+      # Logging Configuration
+      LOGGING_LEVEL_COM_BUILDMASTER_PROJECTTRACKER: INFO
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: WARN
+
+      # Cache Configuration
+      SPRING_CACHE_TYPE: caffeine
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - buildmaster-network
+    volumes:
+      - app_logs:/app/logs
+
+#  # MongoDB Express (Web-based MongoDB admin interface)
+#  mongo-express:
+#    image: mongo-express:1.0.0-alpha
+#    container_name: buildmaster-mongo-express
+#    restart: unless-stopped
+#    environment:
+#      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+#      ME_CONFIG_MONGODB_ADMINPASSWORD: admin123
+#      ME_CONFIG_MONGODB_SERVER: mongodb
+#      ME_CONFIG_BASICAUTH_USERNAME: admin
+#      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+#    ports:
+#      - "8081:8081"
+#    depends_on:
+#      - mongodb
+#    networks:
+#      - buildmaster-network
+#
+#volumes:
+#  postgres_data:
+#    driver: local
+#  mongodb_data:
+#    driver: local
+#  app_logs:
+#    driver: local
+#
+#networks:
+#  buildmaster-network:
+#    driver: bridge
