@@ -43,8 +43,4 @@ public interface AuditLogService {
     Map<ActionType, Long> getLogCountsByActionType();
 
     Map<EntityType, Long> getLogCountsByEntityType();
-
-    String generateCorrelationId();
-
-    void cleanupOldLogs(int daysToKeep);
 }

@@ -113,13 +113,4 @@ public class AuditLogServiceImpl implements AuditLogService {
                 ));
     }
 
-    @Override
-    public String generateCorrelationId() {
-        return UUID.randomUUID().toString();
-    }
-
-    @Override
-    public void cleanupOldLogs(int daysToKeep) {
-        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(daysToKeep);
-    }
 }
