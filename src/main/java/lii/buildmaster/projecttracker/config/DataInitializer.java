@@ -6,16 +6,20 @@ import lii.buildmaster.projecttracker.service.DeveloperService;
 import lii.buildmaster.projecttracker.service.ProjectService;
 import lii.buildmaster.projecttracker.service.TaskService;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
 @Component
+@Order(1)
 public class DataInitializer implements CommandLineRunner {
 
     private final ProjectService projectService;
     private final DeveloperService developerService;
     private final TaskService taskService;
+
+    private static boolean initialized = false;
 
     public DataInitializer(ProjectService projectService,
                            DeveloperService developerService,
@@ -27,15 +31,18 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Only initialize data if tables are empty
-        if (projectService.getAllProjects().isEmpty()) {
+        // Only initialize data once and if tables are empty
+        if (!initialized && projectService.getAllProjects().isEmpty()) {
+            System.out.println("🔄 Initializing sample data (one-time only)...");
             initializeSampleData();
+            initialized = true;
+            System.out.println("✅ Sample data initialization completed!");
+        } else {
+            System.out.println("⏭️  Sample data already exists, skipping initialization.");
         }
     }
 
     private void initializeSampleData() {
-        System.out.println("🚀 Initializing sample data...");
-
         // Create Projects
         var project1 = projectService.createProject(
                 "E-Commerce Platform",
@@ -182,6 +189,11 @@ public class DataInitializer implements CommandLineRunner {
                 LocalDateTime.now().minusDays(2), // Overdue
                 overdueProject.getId()
         ); // Unassigned overdue task
+
+        System.out.println("📊 Sample data created:");
+        System.out.println("   - 4 Projects (including 1 overdue)");
+        System.out.println("   - 4 Developers");
+        System.out.println("   - 10 Tasks (with various statuses and assignments)");
 
         System.out.println("✅ Sample data initialized successfully!");
         System.out.println("📊 Created:");
