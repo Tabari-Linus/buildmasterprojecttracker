@@ -26,11 +26,11 @@ import java.util.stream.Collectors;
 @Tag(name = "Projects", description = "Operations for managing projects and performing analysis")
 public class ProjectControllerV1 {
 
-    private final ProjectServiceImpl projectService;
+    private final ProjectServiceImpl projectServiceImpl;
     private final ProjectMapper projectMapper;
 
-    public ProjectControllerV1(ProjectServiceImpl projectService, ProjectMapper projectMapper) {
-        this.projectService = projectService;
+    public ProjectControllerV1(ProjectServiceImpl projectServiceImpl, ProjectMapper projectMapper) {
+        this.projectServiceImpl = projectServiceImpl;
         this.projectMapper = projectMapper;
     }
 
@@ -38,7 +38,7 @@ public class ProjectControllerV1 {
     public ResponseEntity<Page<ProjectSummaryDto>> getAllProjects(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
-        List<Project> projects = projectService.getAllProjects();
+        List<Project> projects = projectServiceImpl.getAllProjects();
         List<ProjectSummaryDto> projectDtos = projects.stream()
                 .map(projectMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -53,7 +53,7 @@ public class ProjectControllerV1 {
 
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponseDto> getProjectById(@PathVariable Long id) {
-        Optional<Project> project = projectService.getProjectById(id);
+        Optional<Project> project = projectServiceImpl.getProjectById(id);
 
         if (project.isPresent()) {
             ProjectResponseDto responseDto = projectMapper.toResponseDto(project.get());
@@ -65,7 +65,7 @@ public class ProjectControllerV1 {
 
     @PostMapping
     public ResponseEntity<ProjectResponseDto> createProject(@Valid @RequestBody ProjectRequestDto requestDto) {
-        Project project = projectService.createProject(
+        Project project = projectServiceImpl.createProject(
                 requestDto.getName(),
                 requestDto.getDescription(),
                 requestDto.getDeadline(),
@@ -82,7 +82,7 @@ public class ProjectControllerV1 {
             @Valid @RequestBody ProjectRequestDto requestDto) {
 
         try {
-            Project updatedProject = projectService.updateProject(
+            Project updatedProject = projectServiceImpl.updateProject(
                     id,
                     requestDto.getName(),
                     requestDto.getDescription(),
@@ -101,7 +101,7 @@ public class ProjectControllerV1 {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
         try {
-            projectService.deleteProject(id);
+            projectServiceImpl.deleteProject(id);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -110,7 +110,7 @@ public class ProjectControllerV1 {
 
     @GetMapping("/status")
     public ResponseEntity<List<ProjectSummaryDto>> getProjectsByStatus(@RequestParam ProjectStatus status) {
-        List<Project> projects = projectService.getProjectsByStatus(status);
+        List<Project> projects = projectServiceImpl.getProjectsByStatus(status);
         List<ProjectSummaryDto> projectDtos = projects.stream()
                 .map(projectMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -120,7 +120,7 @@ public class ProjectControllerV1 {
 
     @GetMapping("/search")
     public ResponseEntity<List<ProjectSummaryDto>> searchProjects(@RequestParam String name) {
-        List<Project> projects = projectService.searchProjectsByName(name);
+        List<Project> projects = projectServiceImpl.searchProjectsByName(name);
         List<ProjectSummaryDto> projectDtos = projects.stream()
                 .map(projectMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -130,7 +130,7 @@ public class ProjectControllerV1 {
 
     @GetMapping("/overdue")
     public ResponseEntity<List<ProjectSummaryDto>> getOverdueProjects() {
-        List<Project> projects = projectService.getOverdueProjects();
+        List<Project> projects = projectServiceImpl.getOverdueProjects();
         List<ProjectSummaryDto> projectDtos = projects.stream()
                 .map(projectMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -141,7 +141,7 @@ public class ProjectControllerV1 {
     @PutMapping("/{id}/complete")
     public ResponseEntity<ProjectResponseDto> markAsCompleted(@PathVariable Long id) {
         try {
-            Project project = projectService.markAsCompleted(id);
+            Project project = projectServiceImpl.markAsCompleted(id);
             ProjectResponseDto responseDto = projectMapper.toResponseDto(project);
             return ResponseEntity.ok(responseDto);
         } catch (RuntimeException e) {
@@ -153,7 +153,7 @@ public class ProjectControllerV1 {
     public ResponseEntity<java.util.Map<ProjectStatus, Long>> getProjectCountsByStatus() {
         java.util.Map<ProjectStatus, Long> counts = new java.util.HashMap<>();
         for (ProjectStatus status : ProjectStatus.values()) {
-            counts.put(status, projectService.getProjectCountByStatus(status));
+            counts.put(status, projectServiceImpl.getProjectCountByStatus(status));
         }
         return ResponseEntity.ok(counts);
     }
