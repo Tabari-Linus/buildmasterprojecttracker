@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lii.buildmaster.projecttracker.mapper.TaskMapper;
 import lii.buildmaster.projecttracker.model.dto.request.TaskAssignmentDto;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
+@Tag(name = "Tasks", description = "Task management operations including CRUD, assignment workflows, status tracking, and analytics")
 public class TaskControllerV1 {
 
     private final TaskService taskService;

@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
 import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/developers")
+@Tag(name = "Developers", description = "Developer management operations including CRUD, search by skills, and task statistics")
 public class DeveloperControllerV1 {
 
     private final DeveloperService developerService;
