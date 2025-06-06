@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(TaskNotFoundException.class)
+    @ExceptionHandler(ProjectNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleProjectNotFound(TaskNotFoundException ex) {
         return new ResponseEntity<>(
                 new ApiErrorResponse("Project not found: " + ex.getTaskId(), "Not Found", HttpStatus.NOT_FOUND.value()),
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(TaskNotFoundException.class)
+    @ExceptionHandler(DeveloperNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleDeveloperNotFound(TaskNotFoundException ex) {
         return new ResponseEntity<>(
                 new ApiErrorResponse("Task not found: " + ex.getTaskId(), "Not Found", HttpStatus.NOT_FOUND.value()),

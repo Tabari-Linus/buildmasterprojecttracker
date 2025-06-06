@@ -2,6 +2,7 @@ package lii.buildmaster.projecttracker.service.impl;
 
 
 import lii.buildmaster.projecttracker.annotation.Auditable;
+import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
@@ -68,7 +69,7 @@ public class ProjectServiceImpl implements ProjectService {
     })
     public Project updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + id));
+                .orElseThrow(() -> new ProjectNotFoundException(id));
 
         project.setName(name);
         project.setDescription(description);
@@ -89,7 +90,7 @@ public class ProjectServiceImpl implements ProjectService {
     })
     public void deleteProject(Long id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + id));
+                .orElseThrow(() -> new ProjectNotFoundException(id));
 
         projectRepository.deleteById(id);
 
@@ -125,7 +126,7 @@ public class ProjectServiceImpl implements ProjectService {
     })
     public Project markAsCompleted(Long id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + id));
+                .orElseThrow(() -> new ProjectNotFoundException(id));
 
         ProjectStatus oldStatus = project.getStatus();
         project.setStatus(ProjectStatus.COMPLETED);

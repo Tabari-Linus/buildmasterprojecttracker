@@ -1,6 +1,7 @@
 package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.annotation.Auditable;
+import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
@@ -58,7 +59,7 @@ public class TaskServiceImpl implements TaskService {
     })
     public Task createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId, Long developerId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+                .orElseThrow(() -> new ProjectNotFoundException(projectId));
 
         Developer developer = null;
         if (developerId != null) {
