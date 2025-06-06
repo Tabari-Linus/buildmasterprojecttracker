@@ -34,7 +34,13 @@ public class GlobalExceptionHandler {
         );
     }
 
-
+    @ExceptionHandler(TaskNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleDeveloperNotFound(TaskNotFoundException ex) {
+        return new ResponseEntity<>(
+                new ApiErrorResponse("Task not found: " + ex.getTaskId(), "Not Found", HttpStatus.NOT_FOUND.value()),
+                HttpStatus.NOT_FOUND
+        );
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
