@@ -52,14 +52,8 @@ public class DeveloperControllerV1 {
 
     @GetMapping("/{id}")
     public ResponseEntity<DeveloperResponseDto> getDeveloperById(@PathVariable Long id) {
-        Optional<Developer> developer = developerService.getDeveloperById(id);
-
-        if (developer.isPresent()) {
-            DeveloperResponseDto responseDto = developerMapper.toResponseDto(developer.get());
-            return ResponseEntity.ok(responseDto);
-        }
-
-        return ResponseEntity.notFound().build();
+        Developer developer = developerService.getDeveloperById(id);
+        return ResponseEntity.ok(developerMapper.toResponseDto(developer));
     }
 
     @GetMapping("/email")
