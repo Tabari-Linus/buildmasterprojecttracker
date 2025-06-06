@@ -8,8 +8,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: buildmaster_db
-      POSTGRES_USER: buildmaster
-      POSTGRES_PASSWORD: buildmaster123
+      POSTGRES_USER: mrlii
+      POSTGRES_PASSWORD: buildmaster@v1
     ports:
       - "5432:5432"
     volumes:
