@@ -11,16 +11,17 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-jammy
+LABEL authors="Mr Lii"
 
-RUN groupadd -r spring && useradd -r -g spring spring
+RUN groupadd -r mrlii && useradd -r -g mrlii mrlii
 
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
-RUN chown lii:lii app.jar
+RUN chown mrlii:mrlii app.jar
 
-USER lii
+USER mrlii
 
 
 # Expose port
