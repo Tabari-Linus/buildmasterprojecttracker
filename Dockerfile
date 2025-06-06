@@ -22,6 +22,7 @@ RUN chown lii:lii app.jar
 
 USER lii
 
+
 # Expose port
 EXPOSE 8080
 
