@@ -39,18 +39,6 @@ public class AuditLogServiceImpl implements AuditLogService {
         return auditLogRepository.save(auditLog);
     }
 
-    @Override
-    public AuditLog logActionWithContext(ActionType actionType, EntityType entityType, String entityId,
-                                         String actorName, Map<String, Object> payload,
-                                         String ipAddress, String userAgent, String sessionId) {
-        AuditLog auditLog = new AuditLog(actionType, entityType, entityId, actorName, payload);
-        auditLog.setIpAddress(ipAddress);
-        auditLog.setUserAgent(userAgent);
-        auditLog.setSessionId(sessionId);
-        auditLog.setCorrelationId(generateCorrelationId());
-
-        return auditLogRepository.save(auditLog);
-    }
 
     @Override
     public Page<AuditLog> getAllLogs(Pageable pageable) {
