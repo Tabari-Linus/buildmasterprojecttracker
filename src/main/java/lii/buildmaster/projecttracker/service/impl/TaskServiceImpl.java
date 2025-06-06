@@ -1,7 +1,9 @@
 package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.annotation.Auditable;
+import lii.buildmaster.projecttracker.exception.DeveloperNotFoundException;
 import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
+import lii.buildmaster.projecttracker.exception.TaskNotFoundException;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
@@ -35,8 +37,6 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final DeveloperRepository developerRepository;
-    private final AuditLogService auditLogService;
-    private final AuditUtil auditUtil;
 
     public TaskServiceImpl(TaskRepository taskRepository,
                            ProjectRepository projectRepository,
@@ -45,8 +45,6 @@ public class TaskServiceImpl implements TaskService {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.developerRepository = developerRepository;
-        this.auditLogService = auditLogService;
-        this.auditUtil = auditUtil;
     }
 
     @Override
@@ -64,22 +62,12 @@ public class TaskServiceImpl implements TaskService {
         Developer developer = null;
         if (developerId != null) {
             developer = developerRepository.findById(developerId)
-                    .orElseThrow(() -> new RuntimeException("Developer not found with id: " + developerId));
+                    .orElseThrow(() -> new DeveloperNotFoundException(developerId));
         }
 
         Task task = new Task(title, description, status, dueDate, project, developer);
-        Task savedTask = taskRepository.save(task);
+       return taskRepository.save(task);
 
-        Map<String, Object> payload = auditUtil.createTaskAuditPayload(savedTask);
-        auditLogService.logAction(
-                ActionType.CREATE,
-                EntityType.TASK,
-                savedTask.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                payload
-        );
-
-        return savedTask;
     }
 
     @Override
@@ -110,28 +98,15 @@ public class TaskServiceImpl implements TaskService {
     })
     public Task updateTask(Long id, String title, String description, TaskStatus status, LocalDateTime dueDate) {
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
-
-        Map<String, Object> beforeState = auditUtil.createTaskAuditPayload(task);
+                .orElseThrow(() -> new TaskNotFoundException(id));
 
         task.setTitle(title);
         task.setDescription(description);
         task.setStatus(status);
         task.setDueDate(dueDate);
 
-        Task updatedTask = taskRepository.save(task);
-        Map<String, Object> afterState = auditUtil.createTaskAuditPayload(updatedTask);
+        return taskRepository.save(task);
 
-        auditLogService.logAction(
-                ActionType.UPDATE,
-                EntityType.TASK,
-                updatedTask.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                beforeState,
-                afterState
-        );
-
-        return updatedTask;
     }
 
     @Override
@@ -144,19 +119,10 @@ public class TaskServiceImpl implements TaskService {
     })
     public void deleteTask(Long id) {
         Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
-
-        Map<String, Object> payload = auditUtil.createTaskAuditPayload(task);
+                .orElseThrow(() -> new TaskNotFoundException(id));
 
         taskRepository.deleteById(id);
 
-        auditLogService.logAction(
-                ActionType.DELETE,
-                EntityType.TASK,
-                id.toString(),
-                auditUtil.getCurrentActorName(),
-                payload
-        );
     }
 
     @Override
@@ -169,24 +135,14 @@ public class TaskServiceImpl implements TaskService {
     })
     public Task assignTaskToDeveloper(Long taskId, Long developerId) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
 
         Developer developer = developerRepository.findById(developerId)
-                .orElseThrow(() -> new RuntimeException("Developer not found with id: " + developerId));
+                .orElseThrow(() -> new DeveloperNotFoundException(developerId));
 
-        Developer oldDeveloper = task.getDeveloper();
         task.setDeveloper(developer);
-        Task savedTask = taskRepository.save(task);
+        return taskRepository.save(task);
 
-        Map<String, Object> payload = auditUtil.createAssignmentAuditPayload(savedTask, oldDeveloper, developer);
-        auditLogService.logAction(
-                ActionType.ASSIGN,
-                EntityType.TASK,
-                savedTask.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                payload
-        );
-        return savedTask;
     }
 
     @Override
@@ -199,22 +155,11 @@ public class TaskServiceImpl implements TaskService {
     })
     public Task unassignTask(Long taskId) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
 
-        Developer oldDeveloper = task.getDeveloper();
         task.setDeveloper(null);
-        Task savedTask = taskRepository.save(task);
+        return taskRepository.save(task);
 
-        Map<String, Object> payload = auditUtil.createAssignmentAuditPayload(savedTask, oldDeveloper, null);
-        auditLogService.logAction(
-                ActionType.UNASSIGN,
-                EntityType.TASK,
-                savedTask.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                payload
-        );
-
-        return savedTask;
     }
 
     @Override
@@ -294,24 +239,11 @@ public class TaskServiceImpl implements TaskService {
     })
     public Task markTaskAsCompleted(Long taskId) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
-        Map<String, Object> beforeState = auditUtil.createTaskAuditPayload(task);
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
 
         task.setStatus(TaskStatus.DONE);
 
-        Task updatedTask = taskRepository.save(task);
-        Map<String, Object> afterState = auditUtil.createTaskAuditPayload(updatedTask);
-
-        auditLogService.logAction(
-                ActionType.UPDATE,
-                EntityType.TASK,
-                updatedTask.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                beforeState,
-                afterState
-        );
-
-        return updatedTask;
+        return taskRepository.save(task);
     }
 
     @Override
@@ -323,25 +255,11 @@ public class TaskServiceImpl implements TaskService {
     })
     public Task moveTaskToInProgress(Long taskId) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found with id: " + taskId));
-
-        Map<String, Object> beforeState = auditUtil.createTaskAuditPayload(task);
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
 
         task.setStatus(TaskStatus.IN_PROGRESS);
 
-        Task updatedTask = taskRepository.save(task);
-        Map<String, Object> afterState = auditUtil.createTaskAuditPayload(updatedTask);
-
-        auditLogService.logAction(
-                ActionType.UPDATE,
-                EntityType.TASK,
-                updatedTask.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                beforeState,
-                afterState
-        );
-
-        return updatedTask;
+        return taskRepository.save(task);
     }
 
     @Override

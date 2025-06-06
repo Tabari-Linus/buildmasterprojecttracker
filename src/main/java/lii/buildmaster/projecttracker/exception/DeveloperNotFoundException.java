@@ -1,10 +1,13 @@
 package lii.buildmaster.projecttracker.exception;
 
+import lombok.Getter;
+
+@Getter
 public class DeveloperNotFoundException extends RuntimeException{
 
-    private final long developerId;
+    private final Long developerId;
 
-    public DeveloperNotFoundException(long developerId) {
+    public DeveloperNotFoundException(Long developerId) {
         super("Develops with ID " + developerId + " not found.");
         this.developerId = developerId;
     }

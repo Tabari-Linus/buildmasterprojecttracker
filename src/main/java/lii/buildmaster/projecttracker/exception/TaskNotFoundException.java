@@ -5,9 +5,9 @@ import lombok.Getter;
 @Getter
 public class TaskNotFoundException extends RuntimeException {
 
-    private final long taskId;
+    private final Long taskId;
 
-    public TaskNotFoundException(long taskId) {
+    public TaskNotFoundException(Long taskId) {
         super("Task with ID " + taskId + " not found.");
         this.taskId = taskId;
     }

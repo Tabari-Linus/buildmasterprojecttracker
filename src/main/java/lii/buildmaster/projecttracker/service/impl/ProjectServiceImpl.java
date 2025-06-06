@@ -128,7 +128,6 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
-        ProjectStatus oldStatus = project.getStatus();
         project.setStatus(ProjectStatus.COMPLETED);
         return projectRepository.save(project);
 
