@@ -15,5 +15,4 @@ public class ProjecttrackerApplication {
     public static void main(String[] args) {
         SpringApplication.run(ProjecttrackerApplication.class, args);
     }
-
 }
