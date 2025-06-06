@@ -26,6 +26,16 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(TaskNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleProjectNotFound(TaskNotFoundException ex) {
+        return new ResponseEntity<>(
+                new ApiErrorResponse("Project not found: " + ex.getTaskId(), "Not Found", HttpStatus.NOT_FOUND.value()),
+                HttpStatus.NOT_FOUND
+        );
+    }
+
+
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         return new ResponseEntity<>(
