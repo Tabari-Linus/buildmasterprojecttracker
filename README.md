@@ -133,7 +133,6 @@ projecttracker/
 ### PostgreSQL Schema (Main Data)
 
 ```sql
--- Projects Table
 CREATE TABLE projects (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -144,7 +143,6 @@ CREATE TABLE projects (
     updated_at TIMESTAMP
 );
 
--- Developers Table
 CREATE TABLE developers (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -154,7 +152,6 @@ CREATE TABLE developers (
     updated_at TIMESTAMP
 );
 
--- Tasks Table
 CREATE TABLE tasks (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
@@ -172,7 +169,6 @@ CREATE TABLE tasks (
 ### MongoDB Schema (Audit Logs)
 
 ```javascript
-// Collection: audit_logs
 {
   "_id": ObjectId,
   "actionType": "CREATE|UPDATE|DELETE|ASSIGN|UNASSIGN|STATUS_CHANGE",
