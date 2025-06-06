@@ -1,6 +1,8 @@
 package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.annotation.Auditable;
+import lii.buildmaster.projecttracker.exception.DeveloperNotFoundException;
+import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
@@ -57,8 +59,8 @@ public class DeveloperServiceImpl implements DeveloperService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "developers", key = "#id")
-    public Optional<Developer> getDeveloperById(Long id) {
-        return developerRepository.findById(id);
+    public Developer getDeveloperById(Long id) {
+        return developerRepository.findById(id).orElseThrow(() -> new DeveloperNotFoundException(id));
     }
 
     @Override
