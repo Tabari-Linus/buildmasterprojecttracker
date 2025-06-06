@@ -1,6 +1,7 @@
 package lii.buildmaster.projecttracker.service.impl;
 
 
+import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
@@ -25,35 +26,19 @@ import java.util.Optional;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
-    private final AuditLogService auditLogService;
-    private final AuditUtil auditUtil;
-
-    public ProjectServiceImpl(ProjectRepository projectRepository, AuditLogService auditLogService,
-                              AuditUtil auditUtil) {
+    public ProjectServiceImpl(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
-        this.auditLogService = auditLogService;
-        this.auditUtil = auditUtil;
     }
 
     @Override
+    @Auditable(action = ActionType.CREATE, entityType = EntityType.PROJECT)
     @Caching(evict = {
             @CacheEvict(value = "projects", allEntries = true),
             @CacheEvict(value = "projectStats", allEntries = true)
     })
     public Project createProject(String name, String description, LocalDateTime deadline, ProjectStatus status) {
         Project project = new Project(name, description, deadline, status);
-        Project savedProject = projectRepository.save(project);
-
-        Map<String, Object> payload = auditUtil.createProjectAuditPayload(savedProject);
-        auditLogService.logAction(
-                ActionType.CREATE,
-                EntityType.PROJECT,
-                savedProject.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                payload
-        );
-
-        return savedProject;
+        return projectRepository.save(project);
     }
 
     @Override
@@ -78,6 +63,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Auditable(action = ActionType.UPDATE, entityType = EntityType.PROJECT)
     @Caching(evict = {
             @CacheEvict(value = "projects", key = "#id"),
             @CacheEvict(value = "projects", key = "'all'"),
@@ -87,43 +73,16 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + id));
 
-        Map<String, Object> beforeState = auditUtil.createProjectAuditPayload(project);
-        ProjectStatus oldStatus = project.getStatus();
-
         project.setName(name);
         project.setDescription(description);
         project.setDeadline(deadline);
         project.setStatus(status);
 
-        Project updatedProject = projectRepository.save(project);
-
-        Map<String, Object> afterState = auditUtil.createProjectAuditPayload(updatedProject);
-
-        auditLogService.logAction(
-                ActionType.UPDATE,
-                EntityType.PROJECT,
-                updatedProject.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                beforeState,
-                afterState
-        );
-
-        if (!oldStatus.equals(status)) {
-            Map<String, Object> statusPayload = auditUtil.createStatusChangeAuditPayload(
-                    updatedProject, "Project", oldStatus, status
-            );
-            auditLogService.logAction(
-                    ActionType.STATUS_CHANGE,
-                    EntityType.PROJECT,
-                    updatedProject.getId().toString(),
-                    auditUtil.getCurrentActorName(),
-                    statusPayload
-            );
-        }
-        return updatedProject;
+        return projectRepository.save(project);
     }
 
     @Override
+    @Auditable(action = ActionType.DELETE, entityType = EntityType.PROJECT)
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "projects", allEntries = true),
@@ -135,18 +94,8 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + id));
 
-        Map<String, Object> payload = auditUtil.createProjectAuditPayload(project);
-        payload.put("deletedTasksCount", project.getTasks().size());
-
         projectRepository.deleteById(id);
 
-        auditLogService.logAction(
-                ActionType.DELETE,
-                EntityType.PROJECT,
-                id.toString(),
-                auditUtil.getCurrentActorName(),
-                payload
-        );
     }
 
     @Override
@@ -171,6 +120,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @Auditable(action = ActionType.STATUS_CHANGE, entityType = EntityType.PROJECT)
     @Caching(evict = {
             @CacheEvict(value = "projects", key = "#id"),
             @CacheEvict(value = "projects", key = "'all'"),
@@ -182,19 +132,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         ProjectStatus oldStatus = project.getStatus();
         project.setStatus(ProjectStatus.COMPLETED);
-        Project savedProject = projectRepository.save(project);
+        return projectRepository.save(project);
 
-        Map<String, Object> payload = auditUtil.createStatusChangeAuditPayload(
-                savedProject, "Project", oldStatus, ProjectStatus.COMPLETED
-        );
-        auditLogService.logAction(
-                ActionType.STATUS_CHANGE,
-                EntityType.PROJECT,
-                savedProject.getId().toString(),
-                auditUtil.getCurrentActorName(),
-                payload
-        );
-
-        return savedProject;
     }
 }
