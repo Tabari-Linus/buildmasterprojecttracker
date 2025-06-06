@@ -8,7 +8,7 @@ import lii.buildmaster.projecttracker.model.dto.summary.ProjectSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import jakarta.validation.Valid;
-import lii.buildmaster.projecttracker.service.ProjectService;
+import lii.buildmaster.projecttracker.service.impl.ProjectServiceImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 @Tag(name = "Projects", description = "Operations for managing projects and performing analysis")
 public class ProjectControllerV1 {
 
-    private final ProjectService projectService;
+    private final ProjectServiceImpl projectService;
     private final ProjectMapper projectMapper;
 
-    public ProjectControllerV1(ProjectService projectService, ProjectMapper projectMapper) {
+    public ProjectControllerV1(ProjectServiceImpl projectService, ProjectMapper projectMapper) {
         this.projectService = projectService;
         this.projectMapper = projectMapper;
     }
