@@ -1,0 +1,748 @@
+{
+	"info": {
+		"_postman_id": "2481d14a-2296-41fb-a611-a6c6c0656ade",
+		"name": "BuildMaster Project Tracker API V1",
+		"description": "Complete API collection for testing all endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "24722210",
+		"_collection_link": "https://crimson-comet-17180.postman.co/workspace/Team-Workspace~dcf55834-5520-4311-825e-996da9561d07/collection/24722210-2481d14a-2296-41fb-a611-a6c6c0656ade?action=share&source=collection_link&creator=24722210"
+	},
+	"item": [
+		{
+			"name": "Projects API",
+			"item": [
+				{
+					"name": "Get All Projects (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/projects?page=0&size=10&sort=createdAt,desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt,desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/projects/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Project",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"AI Chatbot Platform\",\n  \"description\": \"Building an intelligent chatbot platform with NLP capabilities\",\n  \"deadline\": \"2024-09-30T18:00:00\",\n  \"status\": \"PLANNING\"\n}"
+						},
+						"url": "{{baseUrl}}/projects"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Project",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"AI Chatbot Platform - Updated\",\n  \"description\": \"Building an advanced intelligent chatbot platform with enhanced NLP capabilities\",\n  \"deadline\": \"2024-10-15T18:00:00\",\n  \"status\": \"IN_PROGRESS\"\n}"
+						},
+						"url": "{{baseUrl}}/projects/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Projects by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/projects/status?status=IN_PROGRESS",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"status"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "IN_PROGRESS"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Projects",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/projects/search?name=platform",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"projects",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "platform"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Overdue Projects",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/projects/overdue"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Project as Completed",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": "{{baseUrl}}/projects/1/complete"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project Stats by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/projects/stats/count-by-status"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Project",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/projects/5"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Developers API",
+			"item": [
+				{
+					"name": "Get All Developers (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/developers?page=0&size=10&sort=name",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"developers"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "name"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Developer by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/developers/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Developer by Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/developers/email?email=alice.johnson@buildmaster.com",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"developers",
+								"email"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "alice.johnson@buildmaster.com"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Developer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Emily Chen\",\n  \"email\": \"emily.chen@buildmaster.com\",\n  \"skills\": \"Python, FastAPI, Machine Learning, TensorFlow, Docker\"\n}"
+						},
+						"url": "{{baseUrl}}/developers"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Developer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Emily Chen - Senior\",\n  \"email\": \"emily.chen@buildmaser.com\",\n  \"skills\": \"Python, FastAPI, Machine Learning, TensorFlow, Docker, Kubernetes, MLOps\"\n}"
+						},
+						"url": "{{baseUrl}}/developers/2"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Developers by Name",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/developers/search?name=Alice",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"developers",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "Alice"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find Developers by Skill",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/developers/skill?skill=Python",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"developers",
+								"skill"
+							],
+							"query": [
+								{
+									"key": "skill",
+									"value": "Python"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Email Availability",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/developers/email-check/test@example.com"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Total Developer Count",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/developers/stats/total-count"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Developer",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/developers/1"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tasks API",
+			"item": [
+				{
+					"name": "Get All Tasks (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tasks?page=0&size=20&sort=createdAt,desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tasks"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "createdAt,desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Task (Assigned)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Implement OAuth2 Authentication\",\n  \"description\": \"Add OAuth2 authentication with Google and GitHub providers\",\n  \"status\": \"TODO\",\n  \"dueDate\": \"2024-07-20T17:00:00\",\n  \"projectId\": 1,\n  \"developerId\": 2\n}"
+						},
+						"url": "{{baseUrl}}/tasks"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Task (Unassigned)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Write API Documentation\",\n  \"description\": \"Create comprehensive API documentation using Swagger/OpenAPI\",\n  \"status\": \"TODO\",\n  \"dueDate\": \"2024-07-25T17:00:00\",\n  \"projectId\": 1\n}"
+						},
+						"url": "{{baseUrl}}/tasks"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Task",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Implement OAuth2 Authentication - Updated\",\n  \"description\": \"Add OAuth2 authentication with Google, GitHub, and Microsoft providers\",\n  \"status\": \"IN_PROGRESS\",\n  \"dueDate\": \"2024-07-22T17:00:00\",\n  \"projectId\": 2\n}"
+						},
+						"url": "{{baseUrl}}/tasks/6"
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Task to Developer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"developerId\": 3\n}"
+						},
+						"url": "{{baseUrl}}/tasks/5/assign"
+					},
+					"response": []
+				},
+				{
+					"name": "Unassign Task",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/1/unassign"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Task as Completed",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/5/complete"
+					},
+					"response": []
+				},
+				{
+					"name": "Move Task to In Progress",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/5/start"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tasks by Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/project/2"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tasks by Developer",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/developer/2"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unassigned Tasks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/unassigned"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tasks by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tasks/status?status=TODO",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tasks",
+								"status"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "TODO"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Overdue Tasks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/overdue"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tasks Due Within Days",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/due-within/10"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Tasks by Title",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tasks/search?title=authentication",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tasks",
+								"search"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "authentication"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tasks in Overdue Projects",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/overdue-projects"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task Counts by Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/stats/count-by-status"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Top Developers by Task Count",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tasks/stats/top-developers?limit=5",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tasks",
+								"stats",
+								"top-developers"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task Count by Project",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/stats/project/1/count"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task Count by Developer",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/stats/developer/1/count"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Task",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/tasks/1"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AUditLogs",
+			"item": [
+				{
+					"name": "All audit logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-logs"
+					},
+					"response": []
+				},
+				{
+					"name": "Project Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-logs/entity-type/PROJECT"
+					},
+					"response": []
+				},
+				{
+					"name": "Project logs by id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-logs/trail/PROJECT/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Log for Task Trail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-logs/trail/TASK/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Logs by action",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-logs/action/CREATE"
+					},
+					"response": []
+				},
+				{
+					"name": "Log Action Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-logs/stats/count-by-action"
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Audit logs",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-management/clear-all"
+					},
+					"response": []
+				},
+				{
+					"name": "Audit Log Count",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "http://localhost:8080/api/v1/audit-management/count"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080/api/v1",
+			"type": "string"
+		}
+	]
+}
