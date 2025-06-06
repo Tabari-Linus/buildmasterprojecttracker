@@ -1,6 +1,5 @@
 package lii.buildmaster.projecttracker.util;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lii.buildmaster.projecttracker.model.entity.Developer;
@@ -19,19 +18,6 @@ public class AuditUtil {
     public AuditUtil() {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
-    }
-
-
-    public Map<String, Object> entityToMap(Object entity) {
-        try {
-            return objectMapper.convertValue(entity, new TypeReference<Map<String, Object>>() {});
-        } catch (Exception e) {
-            Map<String, Object> fallback = new HashMap<>();
-            fallback.put("entityClass", entity.getClass().getSimpleName());
-            fallback.put("toString", entity.toString());
-            fallback.put("error", "Failed to serialize entity: " + e.getMessage());
-            return fallback;
-        }
     }
 
 
@@ -86,22 +72,4 @@ public class AuditUtil {
         return payload;
     }
 
-    public Map<String, Object> createStatusChangeAuditPayload(Object entity, String entityType, Object oldStatus, Object newStatus) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("entityType", entityType);
-
-        if (entity instanceof Project) {
-            Project project = (Project) entity;
-            payload.put("entityId", project.getId());
-            payload.put("entityName", project.getName());
-        } else if (entity instanceof Task) {
-            Task task = (Task) entity;
-            payload.put("entityId", task.getId());
-            payload.put("entityName", task.getTitle());
-        }
-
-        payload.put("oldStatus", oldStatus);
-        payload.put("newStatus", newStatus);
-        return payload;
-    }
 }
