@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.service.impl;
 
+import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
@@ -48,6 +49,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Auditable(action = ActionType.CREATE, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", allEntries = true),
             @CacheEvict(value = "taskStats", allEntries = true),
@@ -99,6 +101,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Auditable(action = ActionType.UPDATE, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", key = "#id"),
             @CacheEvict(value = "tasks", key = "'all'"),
@@ -131,6 +134,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Auditable(action = ActionType.DELETE, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", allEntries = true),
             @CacheEvict(value = "taskStats", allEntries = true),
@@ -155,6 +159,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Auditable(action = ActionType.ASSIGN, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", key = "#taskId"),
             @CacheEvict(value = "tasks", allEntries = true),
@@ -184,6 +189,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Auditable(action = ActionType.UNASSIGN, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", key = "#taskId"),
             @CacheEvict(value = "tasks", allEntries = true),
@@ -277,6 +283,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Auditable(action = ActionType.STATUS_CHANGE, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", key = "#taskId"),
             @CacheEvict(value = "tasks", allEntries = true),
@@ -307,6 +314,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Auditable(action = ActionType.STATUS_CHANGE, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", key = "#taskId"),
             @CacheEvict(value = "tasks", allEntries = true),

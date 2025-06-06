@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.service.impl;
 
+import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
@@ -33,6 +34,7 @@ public class DeveloperServiceImpl implements DeveloperService {
     }
 
     @Override
+    @Auditable(action = ActionType.CREATE, entityType = EntityType.DEVELOPER)
     @Caching(evict = {
             @CacheEvict(value = "developers", allEntries = true),
             @CacheEvict(value = "developerStats", allEntries = true)
@@ -80,6 +82,7 @@ public class DeveloperServiceImpl implements DeveloperService {
     }
 
     @Override
+    @Auditable(action = ActionType.UPDATE, entityType = EntityType.DEVELOPER)
     @Caching(evict = {
             @CacheEvict(value = "developers", key = "#id"),
             @CacheEvict(value = "developers", key = "'all'"),
@@ -120,6 +123,7 @@ public class DeveloperServiceImpl implements DeveloperService {
     }
 
     @Override
+    @Auditable(action = ActionType.DELETE, entityType = EntityType.DEVELOPER)
     @Caching(evict = {
             @CacheEvict(value = "developers", allEntries = true),
             @CacheEvict(value = "developerStats", allEntries = true),
