@@ -56,14 +56,8 @@ public class TaskControllerV1 {
 
     @GetMapping("/{id}")
     public ResponseEntity<TaskResponseDto> getTaskById(@PathVariable Long id) {
-        Optional<Task> task = taskServiceImpl.getTaskById(id);
-
-        if (task.isPresent()) {
-            TaskResponseDto responseDto = taskMapper.toResponseDto(task.get());
-            return ResponseEntity.ok(responseDto);
-        }
-
-        return ResponseEntity.notFound().build();
+        Task task = taskServiceImpl.getTaskById(id);
+        return ResponseEntity.ok(taskMapper.toResponseDto(task));
     }
 
     @PostMapping

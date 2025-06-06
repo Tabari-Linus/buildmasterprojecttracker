@@ -85,8 +85,9 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "#id")
-    public Optional<Task> getTaskById(Long id) {
-        return taskRepository.findById(id);
+    public Task getTaskById(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
     }
 
     @Override

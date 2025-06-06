@@ -17,7 +17,7 @@ public interface TaskService {
 
     List<Task> getAllTasks();
 
-    Optional<Task> getTaskById(Long id);
+    Task getTaskById(Long id);
 
     Task updateTask(Long id, String title, String description, TaskStatus status, LocalDateTime dueDate);
 
