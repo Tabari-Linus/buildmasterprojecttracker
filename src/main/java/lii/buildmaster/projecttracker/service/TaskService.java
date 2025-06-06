@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.service;
 
+import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
 import lii.buildmaster.projecttracker.model.enums.TaskStatus;
 
@@ -12,7 +13,7 @@ public interface TaskService {
 
     Task createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId, Long developerId);
 
-    Task createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId);
+    void createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId);
 
     List<Task> getAllTasks();
 
@@ -34,9 +35,7 @@ public interface TaskService {
 
     List<Task> getTasksByStatus(TaskStatus status);
 
-    List<Task> getTasksByProjectAndStatus(Long projectId, TaskStatus status);
-
-    List<Task> getTasksByDeveloperAndStatus(Long developerId, TaskStatus status);
+    List<Project> getProjectsWithoutTasks();
 
     List<Task> getOverdueTasks();
 

@@ -23,9 +23,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByStatus(TaskStatus status);
 
-    List<Task> findByProjectIdAndStatus(Long projectId, TaskStatus status);
-
-    List<Task> findByDeveloperIdAndStatus(Long developerId, TaskStatus status);
 
     @Query("SELECT t FROM Task t WHERE t.dueDate < :currentTime AND t.status != 'DONE'")
     List<Task> findOverdueTasks(@Param("currentTime") LocalDateTime currentTime);
