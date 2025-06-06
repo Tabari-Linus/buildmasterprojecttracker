@@ -80,8 +80,8 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Task createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId) {
-        return createTask(title, description, status, dueDate, projectId, null);
+    public void createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId) {
+        createTask(title, description, status, dueDate, projectId, null);
     }
 
     @Override
@@ -239,17 +239,18 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    @Cacheable(value = "tasks", key = "'project_' + #projectId + '_status_' + #status.name()")
-    public List<Task> getTasksByProjectAndStatus(Long projectId, TaskStatus status) {
-        return taskRepository.findByProjectIdAndStatus(projectId, status);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    @Cacheable(value = "tasks", key = "'developer_' + #developerId + '_status_' + #status.name()")
-    public List<Task> getTasksByDeveloperAndStatus(Long developerId, TaskStatus status) {
-        return taskRepository.findByDeveloperIdAndStatus(developerId, status);
+    @Transactional
+    @Cacheable(value = "projects", key = "'projects_with_no_task'")
+    public List<Project> getProjectsWithoutTasks(){
+        List<Object[]> results = taskRepository.findProjectsWithoutTasks();
+        return results.stream()
+                .map( p ->{
+                    Project project = new Project();
+                    project.setId((Long) p[0]);
+                    project.setName((String) p[1]);
+                    project.setDescription((String) p[2]);
+                    return project;
+                        }).collect(Collectors.toList());
     }
 
     @Override

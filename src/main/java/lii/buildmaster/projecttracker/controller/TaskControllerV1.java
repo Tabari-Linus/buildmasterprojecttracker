@@ -6,6 +6,7 @@ import lii.buildmaster.projecttracker.model.dto.request.TaskAssignmentDto;
 import lii.buildmaster.projecttracker.model.dto.request.TaskRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.TaskResponseDto;
 import lii.buildmaster.projecttracker.model.dto.summary.TaskSummaryDto;
+import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
 import lii.buildmaster.projecttracker.model.enums.TaskStatus;
 import lii.buildmaster.projecttracker.service.TaskService;
@@ -267,5 +268,10 @@ public class TaskControllerV1 {
         long count = taskService.getTaskCountByDeveloper(developerId);
         Map<String, Long> response = Map.of("developerId", developerId, "taskCount", count);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/projects-without-task")
+    public ResponseEntity<List<Project>> getProjectsWithoutTasks(){
+        return ResponseEntity.ok(taskService.getProjectsWithoutTasks());
     }
 }
