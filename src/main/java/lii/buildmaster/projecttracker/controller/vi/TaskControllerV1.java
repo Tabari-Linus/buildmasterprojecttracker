@@ -10,7 +10,7 @@ import lii.buildmaster.projecttracker.model.dto.summary.TaskSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
 import lii.buildmaster.projecttracker.model.enums.TaskStatus;
-import lii.buildmaster.projecttracker.service.TaskService;
+import lii.buildmaster.projecttracker.service.impl.TaskServiceImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -29,11 +29,11 @@ import java.util.stream.Collectors;
 @Tag(name = "Tasks", description = "Task management operations including CRUD, assignment workflows, status tracking, and analytics")
 public class TaskControllerV1 {
 
-    private final TaskService taskService;
+    private final TaskServiceImpl taskServiceImpl;
     private final TaskMapper taskMapper;
 
-    public TaskControllerV1(TaskService taskService, TaskMapper taskMapper) {
-        this.taskService = taskService;
+    public TaskControllerV1(TaskServiceImpl taskServiceImpl, TaskMapper taskMapper) {
+        this.taskServiceImpl = taskServiceImpl;
         this.taskMapper = taskMapper;
     }
 
@@ -41,7 +41,7 @@ public class TaskControllerV1 {
     public ResponseEntity<Page<TaskSummaryDto>> getAllTasks(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
 
-        List<Task> tasks = taskService.getAllTasks();
+        List<Task> tasks = taskServiceImpl.getAllTasks();
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -56,7 +56,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/{id}")
     public ResponseEntity<TaskResponseDto> getTaskById(@PathVariable Long id) {
-        Optional<Task> task = taskService.getTaskById(id);
+        Optional<Task> task = taskServiceImpl.getTaskById(id);
 
         if (task.isPresent()) {
             TaskResponseDto responseDto = taskMapper.toResponseDto(task.get());
@@ -69,7 +69,7 @@ public class TaskControllerV1 {
     @PostMapping
     public ResponseEntity<TaskResponseDto> createTask(@Valid @RequestBody TaskRequestDto requestDto) {
         try {
-            Task task = taskService.createTask(
+            Task task = taskServiceImpl.createTask(
                     requestDto.getTitle(),
                     requestDto.getDescription(),
                     requestDto.getStatus(),
@@ -92,7 +92,7 @@ public class TaskControllerV1 {
             @Valid @RequestBody TaskRequestDto requestDto) {
 
         try {
-            Task updatedTask = taskService.updateTask(
+            Task updatedTask = taskServiceImpl.updateTask(
                     id,
                     requestDto.getTitle(),
                     requestDto.getDescription(),
@@ -111,7 +111,7 @@ public class TaskControllerV1 {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         try {
-            taskService.deleteTask(id);
+            taskServiceImpl.deleteTask(id);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -124,7 +124,7 @@ public class TaskControllerV1 {
             @Valid @RequestBody TaskAssignmentDto assignmentDto) {
 
         try {
-            Task task = taskService.assignTaskToDeveloper(id, assignmentDto.getDeveloperId());
+            Task task = taskServiceImpl.assignTaskToDeveloper(id, assignmentDto.getDeveloperId());
             TaskResponseDto responseDto = taskMapper.toResponseDto(task);
             return ResponseEntity.ok(responseDto);
         } catch (RuntimeException e) {
@@ -135,7 +135,7 @@ public class TaskControllerV1 {
     @PutMapping("/{id}/unassign")
     public ResponseEntity<TaskResponseDto> unassignTask(@PathVariable Long id) {
         try {
-            Task task = taskService.unassignTask(id);
+            Task task = taskServiceImpl.unassignTask(id);
             TaskResponseDto responseDto = taskMapper.toResponseDto(task);
             return ResponseEntity.ok(responseDto);
         } catch (RuntimeException e) {
@@ -146,7 +146,7 @@ public class TaskControllerV1 {
     @PutMapping("/{id}/complete")
     public ResponseEntity<TaskResponseDto> markAsCompleted(@PathVariable Long id) {
         try {
-            Task task = taskService.markTaskAsCompleted(id);
+            Task task = taskServiceImpl.markTaskAsCompleted(id);
             TaskResponseDto responseDto = taskMapper.toResponseDto(task);
             return ResponseEntity.ok(responseDto);
         } catch (RuntimeException e) {
@@ -157,7 +157,7 @@ public class TaskControllerV1 {
     @PutMapping("/{id}/start")
     public ResponseEntity<TaskResponseDto> moveToInProgress(@PathVariable Long id) {
         try {
-            Task task = taskService.moveTaskToInProgress(id);
+            Task task = taskServiceImpl.moveTaskToInProgress(id);
             TaskResponseDto responseDto = taskMapper.toResponseDto(task);
             return ResponseEntity.ok(responseDto);
         } catch (RuntimeException e) {
@@ -167,7 +167,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/project/{projectId}")
     public ResponseEntity<List<TaskSummaryDto>> getTasksByProject(@PathVariable Long projectId) {
-        List<Task> tasks = taskService.getTasksByProject(projectId);
+        List<Task> tasks = taskServiceImpl.getTasksByProject(projectId);
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -177,7 +177,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/developer/{developerId}")
     public ResponseEntity<List<TaskSummaryDto>> getTasksByDeveloper(@PathVariable Long developerId) {
-        List<Task> tasks = taskService.getTasksByDeveloper(developerId);
+        List<Task> tasks = taskServiceImpl.getTasksByDeveloper(developerId);
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -187,7 +187,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/unassigned")
     public ResponseEntity<List<TaskSummaryDto>> getUnassignedTasks() {
-        List<Task> tasks = taskService.getUnassignedTasks();
+        List<Task> tasks = taskServiceImpl.getUnassignedTasks();
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -197,7 +197,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/status")
     public ResponseEntity<List<TaskSummaryDto>> getTasksByStatus(@RequestParam TaskStatus status) {
-        List<Task> tasks = taskService.getTasksByStatus(status);
+        List<Task> tasks = taskServiceImpl.getTasksByStatus(status);
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -207,7 +207,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/overdue")
     public ResponseEntity<List<TaskSummaryDto>> getOverdueTasks() {
-        List<Task> tasks = taskService.getOverdueTasks();
+        List<Task> tasks = taskServiceImpl.getOverdueTasks();
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -217,7 +217,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/due-within/{days}")
     public ResponseEntity<List<TaskSummaryDto>> getTasksDueWithinDays(@PathVariable int days) {
-        List<Task> tasks = taskService.getTasksDueWithinDays(days);
+        List<Task> tasks = taskServiceImpl.getTasksDueWithinDays(days);
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -227,7 +227,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/search")
     public ResponseEntity<List<TaskSummaryDto>> searchTasks(@RequestParam String title) {
-        List<Task> tasks = taskService.searchTasksByTitle(title);
+        List<Task> tasks = taskServiceImpl.searchTasksByTitle(title);
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -237,7 +237,7 @@ public class TaskControllerV1 {
 
     @GetMapping("/overdue-projects")
     public ResponseEntity<List<TaskSummaryDto>> getTasksInOverdueProjects() {
-        List<Task> tasks = taskService.getTasksInOverdueProjects();
+        List<Task> tasks = taskServiceImpl.getTasksInOverdueProjects();
         List<TaskSummaryDto> taskDtos = tasks.stream()
                 .map(taskMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -247,33 +247,33 @@ public class TaskControllerV1 {
 
     @GetMapping("/stats/count-by-status")
     public ResponseEntity<Map<TaskStatus, Long>> getTaskCountsByStatus() {
-        Map<TaskStatus, Long> counts = taskService.getTaskCountsByStatus();
+        Map<TaskStatus, Long> counts = taskServiceImpl.getTaskCountsByStatus();
         return ResponseEntity.ok(counts);
     }
 
     @GetMapping("/stats/top-developers")
     public ResponseEntity<List<Map<String, Object>>> getTopDevelopers(
             @RequestParam(defaultValue = "5") int limit) {
-        List<Map<String, Object>> topDevelopers = taskService.getTopDevelopersWithMostTasks(limit);
+        List<Map<String, Object>> topDevelopers = taskServiceImpl.getTopDevelopersWithMostTasks(limit);
         return ResponseEntity.ok(topDevelopers);
     }
 
     @GetMapping("/stats/project/{projectId}/count")
     public ResponseEntity<Map<String, Long>> getTaskCountByProject(@PathVariable Long projectId) {
-        long count = taskService.getTaskCountByProject(projectId);
+        long count = taskServiceImpl.getTaskCountByProject(projectId);
         Map<String, Long> response = Map.of("projectId", projectId, "taskCount", count);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/stats/developer/{developerId}/count")
     public ResponseEntity<Map<String, Long>> getTaskCountByDeveloper(@PathVariable Long developerId) {
-        long count = taskService.getTaskCountByDeveloper(developerId);
+        long count = taskServiceImpl.getTaskCountByDeveloper(developerId);
         Map<String, Long> response = Map.of("developerId", developerId, "taskCount", count);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/projects-without-task")
     public ResponseEntity<List<Project>> getProjectsWithoutTasks(){
-        return ResponseEntity.ok(taskService.getProjectsWithoutTasks());
+        return ResponseEntity.ok(taskServiceImpl.getProjectsWithoutTasks());
     }
 }
