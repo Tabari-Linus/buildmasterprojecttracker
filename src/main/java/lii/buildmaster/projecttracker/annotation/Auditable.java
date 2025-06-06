@@ -16,11 +16,4 @@ public @interface Auditable {
 
     EntityType entityType();
 
-    String entityIdParam() default "id";
-
-    boolean captureResult() default false;
-
-    boolean captureBeforeState() default false;
-
-    String description() default "";
 }
