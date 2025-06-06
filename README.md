@@ -1,6 +1,6 @@
 # BuildMaster Project Tracker
 
-A comprehensive project management system built with Spring Boot, featuring hybrid database architecture (PostgreSQL + MongoDB), advanced caching, audit logging, and professional REST APIs.
+A Spring Boot  REST API featuring hybrid database architecture (PostgreSQL + MongoDB), advanced caching, audit logging, and professional REST APIs.
 
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.0-brightgreen)
@@ -13,22 +13,47 @@ A comprehensive project management system built with Spring Boot, featuring hybr
 
 BuildMaster Project Tracker is an project management system that provides a user with the functionality of tracking of projects, developers, and tasks, updating entries and extra features for logging audits, caching and summary analysis of projects task and developers.
 
-### Key Features
+### Key Features 🤩
 
-- **🏗️ Complete CRUD Operations** for Projects, Developers, and Tasks
-- **🔄 Advanced JPA Relationships** with proper cascade operations
-- **📊 Hybrid Database Architecture** (PostgreSQL for relational data, MongoDB for audit logs)
-- **⚡ High-Performance Caching** with Caffeine
-- **🔒 Transaction Management** with proper isolation
-- **📝 Comprehensive Audit Logging** with MongoDB
-- **📚 Interactive API Documentation** with Swagger/OpenAPI
-- **🔄 RESTful API Design** with versioning support
-- **🐳 Docker Support** with multi-container setup
-- **📈 Pagination & Sorting** for all endpoints
-- **🔍 Advanced Search & Filtering** capabilities
+- **Complete Project Tracker** for Projects, Developers, and Tasks
+- **Advanced JPA Relationships** with proper cascade operations
+- **Hybrid Database Architecture** (PostgreSQL for relational data, MongoDB for audit logs)
+- **High-Performance Caching** with Caffeine
+- **Transaction Management** with proper isolation
+- **Comprehensive Audit Logging** with MongoDB
+- **Interactive API Documentation** with Swagger/OpenAPI
+- **RESTful API Design** with versioning support
+- **Docker Support** with multi-container setup
+- **Pagination & Sorting** for all endpoints
+- **Advanced Search & Filtering** capabilities by status, duedate, developer,task, project etc
 
 ## 🏛️ Architecture Overview
 
+
+### Project Structure 🗂️
+```
+projecttracker/
+├── docs/                        # Docs Contains documents including postman json
+├── src/
+│   ├── main/
+│   │   ├── java/lii/buildmaster/projecttracker/
+│   │   │   ├── annotation/      #Custom annotation interface
+│   │   │   ├── Aspect/          # Customer aspect implementation
+│   │   │   ├── config/          # Configuration classes
+│   │   │   ├── controller/      # REST controllers
+│   │   │   ├── exception/       # Custom exceptions
+│   │   │   ├── mapper/          # Mapper Mapping entities and DTOs
+│   │   │   ├── model/           # Domain model including entity, enums, and dto
+│   │   │   ├── repository/      # Data access
+│   │   │   └── service/         # Business logic
+│   │   │   └── util/            # 
+│   │   └── resources/           # Properties files
+│   └── test/                    # Unit tests
+├── docs/                        # Documentation
+├── Dockerfile                   # Docker configuration
+├── docker-compose.yaml          # Docker containers configuration
+└── pom.xml                      # Maven dependencies
+```
 ### System Architecture
 
 ```
@@ -101,6 +126,75 @@ BuildMaster Project Tracker is an project management system that provides a user
    ```bash
    mvn spring-boot:run
    ```
+
+
+## 🗄️ Database Schema
+
+### PostgreSQL Schema (Main Data)
+
+```sql
+-- Projects Table
+CREATE TABLE projects (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description VARCHAR(500),
+    deadline TIMESTAMP NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP
+);
+
+-- Developers Table
+CREATE TABLE developers (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    skills VARCHAR(500),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP
+);
+
+-- Tasks Table
+CREATE TABLE tasks (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description VARCHAR(1000),
+    status VARCHAR(20) NOT NULL,
+    due_date TIMESTAMP,
+    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    developer_id BIGINT REFERENCES developers(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP
+);
+
+```
+
+### MongoDB Schema (Audit Logs)
+
+```javascript
+// Collection: audit_logs
+{
+  "_id": ObjectId,
+  "actionType": "CREATE|UPDATE|DELETE|ASSIGN|UNASSIGN|STATUS_CHANGE",
+  "entityType": "PROJECT|DEVELOPER|TASK",
+  "entityId": String,
+  "timestamp": ISODate,
+  "actorName": String,
+  "payload": Object,
+  "beforeState": Object,  // For updates
+  "afterState": Object,   // For updates
+  "ipAddress": String,    // Optional
+  "userAgent": String,    // Optional
+  "sessionId": String,    // Optional
+  "correlationId": String // Optional
+}
+
+db.audit_logs.createIndex({timestamp: -1})
+db.audit_logs.createIndex({entityType: 1, entityId: 1, timestamp: -1})
+db.audit_logs.createIndex({actionType: 1, timestamp: -1})
+db.audit_logs.createIndex({actorName: 1, timestamp: -1})
+```
+
 
 ## 📡 API Endpoints
 
@@ -263,73 +357,6 @@ POST /api/v1/projects
 }
 ```
 
-## 🗄️ Database Schema
-
-### PostgreSQL Schema (Main Data)
-
-```sql
--- Projects Table
-CREATE TABLE projects (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(500),
-    deadline TIMESTAMP NOT NULL,
-    status VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP
-);
-
--- Developers Table
-CREATE TABLE developers (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    skills VARCHAR(500),
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP
-);
-
--- Tasks Table
-CREATE TABLE tasks (
-    id BIGSERIAL PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
-    description VARCHAR(1000),
-    status VARCHAR(20) NOT NULL,
-    due_date TIMESTAMP,
-    project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    developer_id BIGINT REFERENCES developers(id) ON DELETE SET NULL,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP
-);
-
-```
-
-### MongoDB Schema (Audit Logs)
-
-```javascript
-// Collection: audit_logs
-{
-  "_id": ObjectId,
-  "actionType": "CREATE|UPDATE|DELETE|ASSIGN|UNASSIGN|STATUS_CHANGE",
-  "entityType": "PROJECT|DEVELOPER|TASK",
-  "entityId": String,
-  "timestamp": ISODate,
-  "actorName": String,
-  "payload": Object,
-  "beforeState": Object,  // For updates
-  "afterState": Object,   // For updates
-  "ipAddress": String,    // Optional
-  "userAgent": String,    // Optional
-  "sessionId": String,    // Optional
-  "correlationId": String // Optional
-}
-
-db.audit_logs.createIndex({timestamp: -1})
-db.audit_logs.createIndex({entityType: 1, entityId: 1, timestamp: -1})
-db.audit_logs.createIndex({actionType: 1, timestamp: -1})
-db.audit_logs.createIndex({actorName: 1, timestamp: -1})
-```
-
 ## 🔧 Configuration
 
 ### Docker Environment Variables
@@ -393,5 +420,5 @@ docker-compose down
 
 ## 👥 Authors
 
-- **Linus Tabari** - *Initial work* - [Github Profile](https://github.com/Tabari-Linus)
+- **Linus Tabari**
 
