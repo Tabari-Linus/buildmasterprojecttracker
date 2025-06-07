@@ -194,6 +194,9 @@ db.audit_logs.createIndex({actorName: 1, timestamp: -1})
 
 ## 📡 API Endpoints
 
+## Swagger URL: `http://localhost:8080/swagger-ui.html1`
+![MongoDBLog](docs/images/Swagger.png)
+
 ### Base URL: `http://localhost:8080/api/v1`
 
 ### Projects API
@@ -245,6 +248,8 @@ db.audit_logs.createIndex({actorName: 1, timestamp: -1})
 | GET | `/audit-logs/trail/{type}/{id}` | Get complete audit trail |
 | GET | `/audit-logs/actor/{actorName}` | Get logs by actor |
 | GET | `/audit-logs/stats/count-by-action` | Get statistics by action type |
+
+![MongoDBLog](docs/images/MongoDBLogs.png)
 
 ## 📋 Sample API Responses
 
