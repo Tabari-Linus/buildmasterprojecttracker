@@ -43,6 +43,14 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleUserNotFound(UsernameNotFoundException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto("User with id: " + ex.getUserId() +" not found", "Not Found", HttpStatus.NOT_FOUND.value()),
+                HttpStatus.NOT_FOUND
+        );
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex) {
         return new ResponseEntity<>(
