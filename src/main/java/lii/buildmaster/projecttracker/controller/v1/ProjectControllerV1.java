@@ -1,4 +1,4 @@
-package lii.buildmaster.projecttracker.controller.vi;
+package lii.buildmaster.projecttracker.controller.v1;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lii.buildmaster.projecttracker.mapper.ProjectMapper;
@@ -18,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController

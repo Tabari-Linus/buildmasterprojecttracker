@@ -1,4 +1,4 @@
-package lii.buildmaster.projecttracker.controller.vi;
+package lii.buildmaster.projecttracker.controller.v1;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
