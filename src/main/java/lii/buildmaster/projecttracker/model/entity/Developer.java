@@ -43,10 +43,22 @@ public class Developer extends AuditableEntity{
     @ToString.Exclude
     private List<Task> assignedTasks = new ArrayList<>();
 
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
+    private User user;
+
     public Developer(String name, String email, String skills) {
         this.name = name;
         this.email = email;
         this.skills = skills;
+    }
+
+    public String getUsername() {
+        return user != null ? user.getUsername() : null;
+    }
+
+    public boolean isOwnedBy(String username) {
+        return user != null && user.getUsername().equals(username);
     }
 
     public void assignTask(Task task) {
