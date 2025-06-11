@@ -1,5 +1,8 @@
 package lii.buildmaster.projecttracker.exception;
 
+import lombok.Getter;
+
+@Getter
 public class UsernameNotFoundException extends RuntimeException {
     private final Long userId;
 
