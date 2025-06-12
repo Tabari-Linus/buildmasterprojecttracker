@@ -1,6 +1,8 @@
 package lii.buildmaster.projecttracker.security.oauth2;
 
 import lii.buildmaster.projecttracker.model.entity.User;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,7 +12,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Getter
+@Setter
 public class CustomOAuth2User implements OAuth2User, UserDetails {
+
 
     private Long id;
     private String email;
@@ -93,15 +98,4 @@ public class CustomOAuth2User implements OAuth2User, UserDetails {
         return true;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-    }
 }
