@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth2 Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .login-container {
+            text-align: center;
+        }
+        .oauth-button {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .google {
+            background-color: #4285F4;
+        }
+        .github {
+            background-color: #333;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h1>OAuth2 Login Test</h1>
+
+    <a href="http://localhost:8080/oauth2/authorize/google?redirect_uri=http://localhost:8080/oauth2-test.html"
+       class="oauth-button google">
+        Login with Google
+    </a>
+
+    <a href="http://localhost:8080/oauth2/authorize/github?redirect_uri=http://localhost:8080/oauth2-test.html"
+       class="oauth-button github">
+        Login with GitHub
+    </a>
+
+    <div class="result" id="result" style="display: none;">
+        <h3>Authentication Result</h3>
+        <pre id="resultContent"></pre>
+    </div>
+</div>
+
+<script>
+    // Parse URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const refreshToken = urlParams.get('refreshToken');
+    const userId = urlParams.get('userId');
+    const error = urlParams.get('error');
+
+    if (token || error) {
+        document.getElementById('result').style.display = 'block';
+        const resultContent = document.getElementById('resultContent');
+
+        if (error) {
+            resultContent.textContent = 'Error: ' + error;
+        } else {
+            resultContent.textContent = JSON.stringify({
+                token: token,
+                refreshToken: refreshToken,
+                userId: userId
+            }, null, 2);
+
+            // Test the token
+            fetch('http://localhost:8080/api/test/user', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+                .then(response => response.text())
+                .then(data => {
+                    resultContent.textContent += '\n\nAPI Test Result: ' + data;
+                });
+        }
+    }
+</script>
+</body>
+</html>
