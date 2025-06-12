@@ -30,7 +30,6 @@ public class RegisterRequestDto {
     @Size(max = 50)
     private String lastName;
 
-    @NotBlank(message = "Role is required")
-    @Size(max = 20, message = "Role must not exceed 20 characters")
+
     private String role;
 }
