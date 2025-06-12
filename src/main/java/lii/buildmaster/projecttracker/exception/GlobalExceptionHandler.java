@@ -118,6 +118,22 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(OAuth2AuthenticationProcessingException.class)
+    public ResponseEntity<ErrorResponseDto> handleOAuth2AuthenticationException(OAuth2AuthenticationProcessingException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto(ex.getMessage(), "OAuth2 Authentication Failed", HttpStatus.UNAUTHORIZED.value()),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponseDto> handleBadRequestException(BadRequestException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto(ex.getMessage(), "Bad Request", HttpStatus.BAD_REQUEST.value()),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors()
@@ -192,6 +208,8 @@ public class GlobalExceptionHandler {
         } else if (ex.getMessage() != null && ex.getMessage().contains("duplicate key")) {
             message = "A record with the same unique identifier already exists.";
         } else if (ex.getMessage() != null) {
+            // In development, you might want to show the actual message
+            // In production, you should log it but return a generic message
             message = "Error: " + ex.getMessage();
         }
 
@@ -205,8 +223,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleGenericException(Exception ex, WebRequest request) {
         logger.error("Unexpected error occurred at path: " + request.getDescription(false), ex);
 
+        // In development, show the actual error message
+        // TODO: Remove this in production
+        String message = "An unexpected error occurred: " + ex.getMessage() +
+                " (Type: " + ex.getClass().getSimpleName() + ")";
+
         return new ResponseEntity<>(
-                new ErrorResponseDto("An unexpected error occurred. Please try again later.",
+                new ErrorResponseDto(message,
                         "Internal Server Error",
                         HttpStatus.INTERNAL_SERVER_ERROR.value()),
                 HttpStatus.INTERNAL_SERVER_ERROR
