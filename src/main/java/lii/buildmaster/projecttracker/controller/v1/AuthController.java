@@ -1,5 +1,43 @@
-package lii.buildmaster.projecttracker.controller.v2;
+package lii.buildmaster.projecttracker.controller.v1;
 
+import lii.buildmaster.projecttracker.model.dto.request.LoginRequestDto;
+import lii.buildmaster.projecttracker.model.dto.request.RegisterRequestDto;
+import lii.buildmaster.projecttracker.model.dto.request.TokenRefreshRequestDto;
+import lii.buildmaster.projecttracker.model.dto.response.JwtResponseDto;
+import lii.buildmaster.projecttracker.model.dto.response.MessageResponseDto;
+import lii.buildmaster.projecttracker.model.dto.response.TokenRefreshResponseDto;
+import lii.buildmaster.projecttracker.model.entity.Role;
+import lii.buildmaster.projecttracker.model.entity.User;
+import lii.buildmaster.projecttracker.model.entity.Developer;
+import lii.buildmaster.projecttracker.model.enums.AuthProvider;
+import lii.buildmaster.projecttracker.model.enums.RoleName;
+import lii.buildmaster.projecttracker.repository.jpa.RoleRepository;
+import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
+import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
+import lii.buildmaster.projecttracker.util.jwt.JwtUtils;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -13,7 +51,9 @@ public class AuthController {
 
     @PostMapping("/login")
     @Transactional
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequestDto loginRequest) {
+        logger.info("Login attempt for user: {}", loginRequest.getEmail());
+
         try {
             // Authenticate using email as username
             Authentication authentication = authenticationManager.authenticate(
@@ -39,7 +79,7 @@ public class AuthController {
 
             logger.info("User {} logged in successfully", userDetails.getEmail());
 
-            return ResponseEntity.ok(new JwtResponse(
+            return ResponseEntity.ok(new JwtResponseDto(
                     jwt,
                     refreshToken,
                     userDetails.getId(),
@@ -48,25 +88,29 @@ public class AuthController {
                     roles));
         } catch (Exception e) {
             logger.error("Authentication failed for user: {}", loginRequest.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(MessageResponse.error("Invalid email or password"));
+            throw e; // Let the GlobalExceptionHandler handle it
         }
     }
 
     @PostMapping("/register")
     @Transactional
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequestDto registerRequest) {
+        logger.info("Registration attempt for user: {} with email: {}",
+                registerRequest.getUsername(), registerRequest.getEmail());
+
         try {
             // Check if username exists
             if (userRepository.existsByUsername(registerRequest.getUsername())) {
+                logger.warn("Registration failed: Username {} already exists", registerRequest.getUsername());
                 return ResponseEntity.badRequest()
-                        .body(MessageResponse.error("Username is already taken!"));
+                        .body(MessageResponseDto.error("Username is already taken!"));
             }
 
             // Check if email exists
             if (userRepository.existsByEmail(registerRequest.getEmail())) {
+                logger.warn("Registration failed: Email {} already exists", registerRequest.getEmail());
                 return ResponseEntity.badRequest()
-                        .body(MessageResponse.error("Email is already in use!"));
+                        .body(MessageResponseDto.error("Email is already in use!"));
             }
 
             // Create new user
@@ -76,7 +120,7 @@ public class AuthController {
                     .password(passwordEncoder.encode(registerRequest.getPassword()))
                     .firstName(registerRequest.getFirstName())
                     .lastName(registerRequest.getLastName())
-                    .provider(User.AuthProvider.LOCAL)
+                    .provider(AuthProvider.LOCAL)
                     .enabled(true)
                     .build();
 
@@ -85,69 +129,66 @@ public class AuthController {
             String requestedRole = registerRequest.getRole();
 
             if (requestedRole == null || requestedRole.isEmpty()) {
-                // Default role is DEVELOPER
-                Role userRole = roleRepository.findByName(Role.RoleName.ROLE_DEVELOPER)
-                        .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                roles.add(userRole);
-            } else {
-                // Validate and assign requested role
-                switch (requestedRole.toUpperCase()) {
-                    case "ADMIN":
-                        Role adminRole = roleRepository.findByName(Role.RoleName.ROLE_ADMIN)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(adminRole);
-                        break;
-                    case "MANAGER":
-                        Role managerRole = roleRepository.findByName(Role.RoleName.ROLE_MANAGER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(managerRole);
-                        break;
-                    case "DEVELOPER":
-                        Role devRole = roleRepository.findByName(Role.RoleName.ROLE_DEVELOPER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(devRole);
-                        break;
-                    case "CONTRACTOR":
-                        Role contractorRole = roleRepository.findByName(Role.RoleName.ROLE_CONTRACTOR)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(contractorRole);
-                        break;
-                    default:
-                        Role defaultRole = roleRepository.findByName(Role.RoleName.ROLE_DEVELOPER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(defaultRole);
+                requestedRole = "DEVELOPER"; // Default role
+            }
+
+            // Validate and assign requested role
+            RoleName roleName;
+            try {
+                roleName = RoleName.valueOf("ROLE_" + requestedRole.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                logger.warn("Invalid role requested: {}, defaulting to DEVELOPER", requestedRole);
+                roleName = RoleName.ROLE_DEVELOPER;
+            }
+
+            logger.info("Looking for role: {}", roleName);
+
+            RoleName finalRoleName = roleName;
+            Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> {
+                        logger.error("Role {} not found in database", finalRoleName);
+                        return new RuntimeException("Role " + finalRoleName + " is not found. Please ensure database is initialized.");
+                    });
+
+            logger.info("Found role: {} with id: {}", role.getName(), role.getId());
+
+            roles.add(role);
+            user.setRoles(roles);
+
+            User savedUser = userRepository.save(user);
+            logger.info("User {} saved successfully with ID: {}", savedUser.getUsername(), savedUser.getId());
+
+            // If role is DEVELOPER, create a Developer entity
+            if (roleName == RoleName.ROLE_DEVELOPER) {
+                try {
+                    Developer developer = new Developer();
+                    developer.setName(savedUser.getFirstName() + " " + savedUser.getLastName());
+                    developer.setEmail(savedUser.getEmail());
+                    developer.setUser(savedUser);
+                    developer.setSkills(""); // Default empty skills
+
+                    developerRepository.save(developer);
+                    logger.info("Created developer entity for user: {}", savedUser.getUsername());
+                } catch (Exception e) {
+                    logger.error("Failed to create developer entity for user: {}", savedUser.getUsername(), e);
+                    // Continue with registration even if developer creation fails
                 }
             }
 
-            user.setRoles(roles);
-            User savedUser = userRepository.save(user);
+            logger.info("User {} registered successfully with role: {}",
+                    savedUser.getEmail(), roleName);
 
-            // If role is DEVELOPER, create a Developer entity
-            if (roles.stream().anyMatch(role -> role.getName() == Role.RoleName.ROLE_DEVELOPER)) {
-                Developer developer = new Developer();
-                developer.setName(savedUser.getFirstName() + " " + savedUser.getLastName());
-                developer.setEmail(savedUser.getEmail());
-                developer.setUser(savedUser);
-                developer.setSkills(""); // Default empty skills
-                developerRepository.save(developer);
-            }
-
-            logger.info("User {} registered successfully with role(s): {}",
-                    savedUser.getEmail(),
-                    roles.stream().map(r -> r.getName()).collect(Collectors.toList()));
-
-            return ResponseEntity.ok(MessageResponse.success(
+            return ResponseEntity.ok(MessageResponseDto.success(
                     "User registered successfully! You can now log in."));
 
         } catch (Exception e) {
             logger.error("Registration failed for user: {}", registerRequest.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(MessageResponse.error("Registration failed: " + e.getMessage()));
+            throw e; // Let GlobalExceptionHandler handle it
         }
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequestDto request) {
         String requestRefreshToken = request.getRefreshToken();
 
         try {
@@ -157,7 +198,7 @@ public class AuthController {
                 String newAccessToken = jwtUtils.generateTokenFromUsername(username);
                 String newRefreshToken = jwtUtils.generateRefreshToken(username);
 
-                return ResponseEntity.ok(new TokenRefreshResponse(
+                return ResponseEntity.ok(new TokenRefreshResponseDto(
                         newAccessToken,
                         newRefreshToken,
                         "Bearer"));
@@ -167,15 +208,13 @@ public class AuthController {
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(MessageResponse.error("Refresh token is invalid or expired!"));
+                .body(MessageResponseDto.error("Refresh token is invalid or expired!"));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
-        // In a stateless JWT implementation, logout is handled client-side
-        // by removing the token. Here we just acknowledge the logout.
         SecurityContextHolder.clearContext();
-        return ResponseEntity.ok(MessageResponse.success("Logged out successfully!"));
+        return ResponseEntity.ok(MessageResponseDto.success("Logged out successfully!"));
     }
 
     @GetMapping("/validate")
@@ -184,10 +223,10 @@ public class AuthController {
             String jwt = token.substring(7);
             if (jwtUtils.validateJwtToken(jwt)) {
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
-                return ResponseEntity.ok(MessageResponse.success("Token is valid for user: " + username));
+                return ResponseEntity.ok(MessageResponseDto.success("Token is valid for user: " + username));
             }
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(MessageResponse.error("Invalid or expired token"));
+                .body(MessageResponseDto.error("Invalid or expired token"));
     }
 }
