@@ -300,4 +300,10 @@ public class TaskControllerV1 {
     public ResponseEntity<List<Project>> getProjectsWithoutTasks(){
         return ResponseEntity.ok(taskServiceImpl.getProjectsWithoutTasks());
     }
+
+//    @GetMapping("/my-tasks")
+//    @PreAuthorize("hasRole('ROLE_DEVELOPER')")
+//    public ResponseEntity<Page<TaskResponseDto>> getMyTasks(Pageable pageable) {
+//        return ResponseEntity.ok(taskServiceImpl.getCurrentUserTasks(pageable));
+//    }
 }
