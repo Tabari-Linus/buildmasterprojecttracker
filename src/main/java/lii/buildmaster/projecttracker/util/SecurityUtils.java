@@ -79,6 +79,10 @@ public class SecurityUtils {
                 .collect(Collectors.toSet());
     }
 
+    public static boolean isManager() {
+        return hasRole(RoleName.ROLE_MANAGER.name());
+    }
+
 
     public boolean isOwner(Long resourceUserId) {
         Long currentUserId = getCurrentUserId();
