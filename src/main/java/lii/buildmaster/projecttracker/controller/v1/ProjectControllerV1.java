@@ -9,12 +9,14 @@ import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import jakarta.validation.Valid;
 import lii.buildmaster.projecttracker.service.impl.ProjectServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,17 +25,15 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/projects")
 @Tag(name = "Projects", description = "Operations for managing projects and performing analysis")
+@RequiredArgsConstructor
 public class ProjectControllerV1 {
 
     private final ProjectServiceImpl projectServiceImpl;
     private final ProjectMapper projectMapper;
 
-    public ProjectControllerV1(ProjectServiceImpl projectServiceImpl, ProjectMapper projectMapper) {
-        this.projectServiceImpl = projectServiceImpl;
-        this.projectMapper = projectMapper;
-    }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<ProjectSummaryDto>> getAllProjects(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
@@ -51,12 +51,14 @@ public class ProjectControllerV1 {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@security.canAccessProject(#id)")
     public ResponseEntity<ProjectResponseDto> getProjectById(@PathVariable Long id) {
         Project project = projectServiceImpl.getProjectById(id);
         return ResponseEntity.ok(projectMapper.toResponseDto(project));
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<ProjectResponseDto> createProject(@Valid @RequestBody ProjectRequestDto requestDto) {
         Project project = projectServiceImpl.createProject(
                 requestDto.getName(),
@@ -70,6 +72,7 @@ public class ProjectControllerV1 {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@security.canModifyProject(#id)")
     public ResponseEntity<ProjectResponseDto> updateProject(
             @PathVariable Long id,
             @Valid @RequestBody ProjectRequestDto requestDto) {
@@ -92,6 +95,7 @@ public class ProjectControllerV1 {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
         try {
             projectServiceImpl.deleteProject(id);
@@ -102,6 +106,7 @@ public class ProjectControllerV1 {
     }
 
     @GetMapping("/status")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<List<ProjectSummaryDto>> getProjectsByStatus(@RequestParam ProjectStatus status) {
         List<Project> projects = projectServiceImpl.getProjectsByStatus(status);
         List<ProjectSummaryDto> projectDtos = projects.stream()
@@ -112,6 +117,7 @@ public class ProjectControllerV1 {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ProjectSummaryDto>> searchProjects(@RequestParam String name) {
         List<Project> projects = projectServiceImpl.searchProjectsByName(name);
         List<ProjectSummaryDto> projectDtos = projects.stream()
@@ -122,6 +128,7 @@ public class ProjectControllerV1 {
     }
 
     @GetMapping("/overdue")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ProjectSummaryDto>> getOverdueProjects() {
         List<Project> projects = projectServiceImpl.getOverdueProjects();
         List<ProjectSummaryDto> projectDtos = projects.stream()
@@ -132,6 +139,7 @@ public class ProjectControllerV1 {
     }
 
     @PutMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<ProjectResponseDto> markAsCompleted(@PathVariable Long id) {
         try {
             Project project = projectServiceImpl.markAsCompleted(id);
@@ -143,6 +151,7 @@ public class ProjectControllerV1 {
     }
 
     @GetMapping("/stats/count-by-status")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<java.util.Map<ProjectStatus, Long>> getProjectCountsByStatus() {
         java.util.Map<ProjectStatus, Long> counts = new java.util.HashMap<>();
         for (ProjectStatus status : ProjectStatus.values()) {
@@ -150,4 +159,11 @@ public class ProjectControllerV1 {
         }
         return ResponseEntity.ok(counts);
     }
+
+//    @GetMapping("/{id}/stats")
+//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+//    public ResponseEntity<?> getProjectStats(@PathVariable Long id) {
+//        // Implementation for project statistics
+//        return ResponseEntity.ok(projectServiceImpl.getProjectStats(id));
+//    }
 }
