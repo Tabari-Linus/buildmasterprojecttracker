@@ -3,12 +3,21 @@ package lii.buildmaster.projecttracker.exception;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lii.buildmaster.projecttracker.model.dto.response.ErrorResponseDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -17,6 +26,8 @@ import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(TaskNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleTaskNotFound(TaskNotFoundException ex) {
@@ -58,6 +69,54 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponseDto> handleBadCredentials(BadCredentialsException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto("Invalid email or password", "Unauthorized", HttpStatus.UNAUTHORIZED.value()),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleUsernameNotFound(UsernameNotFoundException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto("User not found with the provided credentials", "Unauthorized", HttpStatus.UNAUTHORIZED.value()),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponseDto> handleDisabledException(DisabledException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto("Your account has been disabled. Please contact support.", "Forbidden", HttpStatus.FORBIDDEN.value()),
+                HttpStatus.FORBIDDEN
+        );
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorResponseDto> handleLockedException(LockedException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto("Your account has been locked. Please contact support.", "Forbidden", HttpStatus.FORBIDDEN.value()),
+                HttpStatus.FORBIDDEN
+        );
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponseDto> handleAuthenticationException(AuthenticationException ex) {
+        logger.error("Authentication error: ", ex);
+        return new ResponseEntity<>(
+                new ErrorResponseDto("Authentication failed: " + ex.getMessage(), "Unauthorized", HttpStatus.UNAUTHORIZED.value()),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDto> handleAccessDeniedException(AccessDeniedException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto("Access denied. You don't have permission to access this resource.", "Forbidden", HttpStatus.FORBIDDEN.value()),
+                HttpStatus.FORBIDDEN
+        );
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDto> handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -121,10 +180,35 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDto> handleGenericException() {
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponseDto> handleRuntimeException(RuntimeException ex, WebRequest request) {
+        logger.error("Runtime exception occurred at path: " + request.getDescription(false), ex);
+
+        // Provide more specific error messages for common runtime exceptions
+        String message = "An unexpected error occurred";
+
+        if (ex.getMessage() != null && ex.getMessage().contains("Role is not found")) {
+            message = "System configuration error: Required role not found. Please contact support.";
+        } else if (ex.getMessage() != null && ex.getMessage().contains("duplicate key")) {
+            message = "A record with the same unique identifier already exists.";
+        } else if (ex.getMessage() != null) {
+            message = "Error: " + ex.getMessage();
+        }
+
         return new ResponseEntity<>(
-                new ErrorResponseDto("An unexpected error occurred", "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+                new ErrorResponseDto(message, "Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleGenericException(Exception ex, WebRequest request) {
+        logger.error("Unexpected error occurred at path: " + request.getDescription(false), ex);
+
+        return new ResponseEntity<>(
+                new ErrorResponseDto("An unexpected error occurred. Please try again later.",
+                        "Internal Server Error",
+                        HttpStatus.INTERNAL_SERVER_ERROR.value()),
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
     }
