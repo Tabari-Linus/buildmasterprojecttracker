@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +35,7 @@ public class DeveloperControllerV1 {
     }
 
     @GetMapping
+    @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<Page<DeveloperSummaryDto>> getAllDevelopers(
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
 
@@ -51,12 +53,20 @@ public class DeveloperControllerV1 {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@security.canViewAllDevelopers() or @security.canModifyDeveloper(#id)")
     public ResponseEntity<DeveloperResponseDto> getDeveloperById(@PathVariable Long id) {
         Developer developer = developerService.getDeveloperById(id);
         return ResponseEntity.ok(developerMapper.toResponseDto(developer));
     }
 
+//    @GetMapping("/me")
+//    @PreAuthorize("hasRole('ROLE_DEVELOPER')")
+//    public ResponseEntity<DeveloperResponseDto> getCurrentDeveloperProfile() {
+//        return ResponseEntity.ok(developerService.getCurrentDeveloperProfile());
+//    }
+
     @GetMapping("/email")
+    @PreAuthorize("@security.canViewAllDevelopers() or @security.canModifyDeveloper(#id)")
     public ResponseEntity<DeveloperResponseDto> getDeveloperByEmail(@RequestParam String email) {
         Optional<Developer> developer = developerService.getDeveloperByEmail(email);
 
@@ -69,6 +79,7 @@ public class DeveloperControllerV1 {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<DeveloperResponseDto> createDeveloper(@Valid @RequestBody DeveloperRequestDto requestDto) {
         try {
             Developer developer = developerService.createDeveloper(
@@ -86,6 +97,7 @@ public class DeveloperControllerV1 {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@security.canModifyDeveloper(#id)")
     public ResponseEntity<DeveloperResponseDto> updateDeveloper(
             @PathVariable Long id,
             @Valid @RequestBody DeveloperRequestDto requestDto) {
@@ -111,6 +123,7 @@ public class DeveloperControllerV1 {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteDeveloper(@PathVariable Long id) {
         try {
             developerService.deleteDeveloper(id);
@@ -121,6 +134,7 @@ public class DeveloperControllerV1 {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<List<DeveloperSummaryDto>> searchDevelopers(@RequestParam String name) {
         List<Developer> developers = developerService.searchDevelopersByName(name);
         List<DeveloperSummaryDto> developerDtos = developers.stream()
@@ -131,6 +145,7 @@ public class DeveloperControllerV1 {
     }
 
     @GetMapping("/skill")
+    @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<List<DeveloperSummaryDto>> findDevelopersBySkill(@RequestParam String skill) {
         List<Developer> developers = developerService.findDevelopersBySkill(skill);
         List<DeveloperSummaryDto> developerDtos = developers.stream()
@@ -141,6 +156,7 @@ public class DeveloperControllerV1 {
     }
 
     @GetMapping("/email-check")
+    @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<java.util.Map<String, Object>> checkEmailAvailability(@RequestParam String email) {
         boolean isTaken = developerService.isEmailTaken(email);
         java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -152,6 +168,7 @@ public class DeveloperControllerV1 {
     }
 
     @GetMapping("/stats/total-count")
+    @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<java.util.Map<String, Long>> getTotalDeveloperCount() {
         long count = developerService.getTotalDeveloperCount();
         java.util.Map<String, Long> response = new java.util.HashMap<>();
@@ -159,4 +176,26 @@ public class DeveloperControllerV1 {
 
         return ResponseEntity.ok(response);
     }
+
+//    @PatchMapping("/{id}/skills")
+//    @PreAuthorize("@security.canModifyDeveloper(#id)")
+//    public ResponseEntity<DeveloperResponseDto> updateDeveloperSkills(
+//            @PathVariable Long id,
+//            @RequestParam String skills) {
+//        return ResponseEntity.ok(developerService.updateDeveloperSkills(id, skills));
+//    }
+//    @GetMapping("/skills/{skill}")
+//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+//    public ResponseEntity<Page<DeveloperResponseDto>> getDevelopersBySkill(
+//            @PathVariable String skill,
+//            Pageable pageable) {
+//        return ResponseEntity.ok(developerService.getDevelopersBySkill(skill, pageable));
+//    }
+//
+//    @GetMapping("/available")
+//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
+//    public ResponseEntity<Page<DeveloperResponseDto>> getAvailableDevelopers(Pageable pageable) {
+//        return ResponseEntity.ok(developerService.getAvailableDevelopers(pageable));
+//    }
+
 }
