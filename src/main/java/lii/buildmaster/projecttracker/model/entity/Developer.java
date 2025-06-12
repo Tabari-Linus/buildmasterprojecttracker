@@ -1,21 +1,22 @@
 package lii.buildmaster.projecttracker.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.springframework.data.domain.Auditable;
+import lombok.*;
+
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "developers")
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Developer extends AuditableEntity{
@@ -25,27 +26,33 @@ public class Developer extends AuditableEntity{
     private Long id;
 
     @NotBlank(message = "Developer name is required")
-    @Size(max = 100, message = "Name must not exceed 100 characters")
-    @Column(name = "name", nullable = false, length = 100)
+    @Size(max = 200, message = "Name must not exceed 100 characters")
+    @Column(name = "name", nullable = false, length = 200)
     private String name;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
-    @Size(max = 150, message = "Email must not exceed 150 characters")
-    @Column(name = "email", nullable = false, unique = true, length = 150)
+    @Size(max = 200, message = "Email must not exceed 150 characters")
+    @Column(name = "email", nullable = false, unique = true, length = 200)
     private String email;
 
     @Size(max = 500, message = "Skills must not exceed 500 characters")
     @Column(name = "skills", length = 500)
     private String skills;
 
-    @OneToMany(mappedBy = "developer", cascade = CascadeType.DETACH, fetch = FetchType.LAZY)
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
+    @ToString.Exclude
+    @JsonBackReference
+    private User user;
+
+
+    @OneToMany(mappedBy = "developer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("developer")
+    @Builder.Default
     @ToString.Exclude
     private List<Task> assignedTasks = new ArrayList<>();
 
-    @OneToOne
-    @JoinColumn(name = "user_id", unique = true)
-    private User user;
 
     public Developer(String name, String email, String skills) {
         this.name = name;
@@ -59,6 +66,10 @@ public class Developer extends AuditableEntity{
 
     public boolean isOwnedBy(String username) {
         return user != null && user.getUsername().equals(username);
+    }
+
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
     }
 
     public void assignTask(Task task) {
