@@ -38,9 +38,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthControllerV1 {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    private static final Logger logger = LoggerFactory.getLogger(AuthControllerV1.class);
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
