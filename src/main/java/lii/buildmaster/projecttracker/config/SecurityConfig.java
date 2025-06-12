@@ -2,6 +2,10 @@ package lii.buildmaster.projecttracker.config;
 
 import lii.buildmaster.projecttracker.security.jwt.JwtAuthenticationEntryPoint;
 import lii.buildmaster.projecttracker.security.jwt.JwtAuthenticationFilter;
+import lii.buildmaster.projecttracker.security.oauth2.CustomOAuth2UserService;
+import lii.buildmaster.projecttracker.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
+import lii.buildmaster.projecttracker.security.oauth2.OAuth2AuthenticationFailureHandler;
+import lii.buildmaster.projecttracker.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import lii.buildmaster.projecttracker.security.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +39,12 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+
     private final JwtAuthenticationEntryPoint unauthorizedHandler;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
@@ -68,19 +77,44 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/", "/oauth2-test.html", "/login/**", "/oauth2/**", "/api/v1/error").permitAll()
                         .requestMatchers("/api/v1/test/**").permitAll()
+                        .requestMatchers("/api/v1/oauth2/**").permitAll()
+                        .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/api/v1/error").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/oauth2/**").permitAll()
+                        .requestMatchers("oauth2-test.html").permitAll()
                         .anyRequest().authenticated()
                 )
-                .authenticationProvider(authenticationProvider())
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/oauth2-test.html") // custom login page
+                        .defaultSuccessUrl("/api/v1/projects", true)
+                        .authorizationEndpoint(authorization -> authorization
+                                .baseUri("/oauth2/authorize")
+                                .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository)
+                        )
+                        .redirectionEndpoint(redirection -> redirection
+                                .baseUri("/login/oauth2/code/*")
+                        )
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler(oAuth2AuthenticationFailureHandler)
+                ).logout(logout -> logout
+                        .logoutSuccessUrl("/oauth2-test.html")
+                        .permitAll()
+                );
+
+        http.authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers(headers -> headers.frameOptions().sameOrigin()); // for H2 console
+                .headers(headers -> headers.frameOptions().sameOrigin());
 
         return http.build();
     }
+
 
 
     @Bean
