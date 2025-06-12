@@ -4,6 +4,7 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lii.buildmaster.projecttracker.model.entity.User;
+import lii.buildmaster.projecttracker.security.oauth2.CustomOAuth2User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,8 +44,18 @@ public class JwtUtils {
     }
 
     public String generateJwtToken(Authentication authentication) {
-        User userPrincipal = (User) authentication.getPrincipal();
-        return generateTokenFromUsername(userPrincipal.getUsername());
+        String username;
+
+        if (authentication.getPrincipal() instanceof User userPrincipal) {
+            username = userPrincipal.getUsername();
+        } else if (authentication.getPrincipal() instanceof CustomOAuth2User oAuth2User) {
+            username = oAuth2User.getUsername();
+        } else {
+            throw new IllegalArgumentException("Unknown principal type: " +
+                    authentication.getPrincipal().getClass().getName());
+        }
+
+        return generateTokenFromUsername(username);
     }
 
     public String generateTokenFromUsername(String username) {
@@ -92,6 +103,8 @@ public class JwtUtils {
             logger.error("JWT token is unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
             logger.error("JWT claims string is empty: {}", e.getMessage());
+        } catch (JwtException e) {
+            logger.error("JWT validation error: {}", e.getMessage());
         }
         return false;
     }
