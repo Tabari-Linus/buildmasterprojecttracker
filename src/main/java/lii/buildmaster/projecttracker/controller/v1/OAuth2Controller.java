@@ -10,7 +10,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/oauth2")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class OAuth2Controller {
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
