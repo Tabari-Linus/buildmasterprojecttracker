@@ -13,9 +13,7 @@ import lii.buildmaster.projecttracker.model.enums.TaskStatus;
 import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
 import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
 import lii.buildmaster.projecttracker.repository.jpa.TaskRepository;
-import lii.buildmaster.projecttracker.service.AuditLogService;
 import lii.buildmaster.projecttracker.service.TaskService;
-import lii.buildmaster.projecttracker.util.AuditUtil;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -27,7 +25,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,8 +37,7 @@ public class TaskServiceImpl implements TaskService {
 
     public TaskServiceImpl(TaskRepository taskRepository,
                            ProjectRepository projectRepository,
-                           DeveloperRepository developerRepository, AuditLogService auditLogService,
-                           AuditUtil auditUtil) {
+                           DeveloperRepository developerRepository) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.developerRepository = developerRepository;

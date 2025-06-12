@@ -56,9 +56,6 @@ projecttracker/
 ```
 ### System Architecture
 
-```
-```
-
 ### Technology Stack
 
 | Layer | Technology        | Purpose |
