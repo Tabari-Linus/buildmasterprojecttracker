@@ -9,20 +9,20 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MessageResponse {
+public class MessageResponseDto {
 
     private String message;
     private boolean success;
 
-    public static MessageResponse success(String message) {
-        return MessageResponse.builder()
+    public static MessageResponseDto success(String message) {
+        return MessageResponseDto.builder()
                 .message(message)
                 .success(true)
                 .build();
     }
 
-    public static MessageResponse error(String message) {
-        return MessageResponse.builder()
+    public static MessageResponseDto error(String message) {
+        return MessageResponseDto.builder()
                 .message(message)
                 .success(false)
                 .build();
