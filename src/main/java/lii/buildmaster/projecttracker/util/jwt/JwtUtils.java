@@ -1,4 +1,4 @@
-package lii.buildmaster.projecttracker.security.jwt;
+package lii.buildmaster.projecttracker.util.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -8,14 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 @Component
 public class JwtUtils {
@@ -31,7 +31,15 @@ public class JwtUtils {
     private int refreshTokenExpirationMs;
 
     private Key key() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+
+        if (keyBytes.length < 64) { // 64 bytes = 512 bits
+            logger.warn("JWT secret key is too short for HS512. Generating a secure key.");
+            SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+            return key;
+        }
+
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateJwtToken(Authentication authentication) {
