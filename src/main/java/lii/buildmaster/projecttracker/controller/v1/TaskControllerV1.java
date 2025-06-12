@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/tasks")
 @Tag(name = "Tasks", description = "Task management operations including CRUD, assignment workflows, status tracking, and analytics")
+
 public class TaskControllerV1 {
 
     private final TaskServiceImpl taskServiceImpl;
@@ -37,6 +39,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<Page<TaskSummaryDto>> getAllTasks(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
 
@@ -54,12 +57,14 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@security.canAccessTask(#id)")
     public ResponseEntity<TaskResponseDto> getTaskById(@PathVariable Long id) {
         Task task = taskServiceImpl.getTaskById(id);
         return ResponseEntity.ok(taskMapper.toResponseDto(task));
     }
 
     @PostMapping
+    @PreAuthorize("@security.canCreateTask()")
     public ResponseEntity<TaskResponseDto> createTask(@Valid @RequestBody TaskRequestDto requestDto) {
         try {
             Task task = taskServiceImpl.createTask(
@@ -80,6 +85,7 @@ public class TaskControllerV1 {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@security.canModifyTask(#id)")
     public ResponseEntity<TaskResponseDto> updateTask(
             @PathVariable Long id,
             @Valid @RequestBody TaskRequestDto requestDto) {
@@ -102,6 +108,7 @@ public class TaskControllerV1 {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
         try {
             taskServiceImpl.deleteTask(id);
@@ -111,7 +118,16 @@ public class TaskControllerV1 {
         }
     }
 
+//    @PatchMapping("/{id}/status")
+//    @PreAuthorize("@security.canModifyTask(#id)")
+//    public ResponseEntity<TaskResponseDto> updateTaskStatus(
+//            @PathVariable Long id,
+//            @RequestParam String status) {
+//        return ResponseEntity.ok(taskServiceImpl.updateTaskStatus(id, status));
+//    }
+
     @PutMapping("/{id}/assign")
+    @PreAuthorize("@security.canAssignTask()")
     public ResponseEntity<TaskResponseDto> assignTask(
             @PathVariable Long id,
             @Valid @RequestBody TaskAssignmentDto assignmentDto) {
@@ -126,6 +142,7 @@ public class TaskControllerV1 {
     }
 
     @PutMapping("/{id}/unassign")
+    @PreAuthorize("@security.canUnassignTask()")
     public ResponseEntity<TaskResponseDto> unassignTask(@PathVariable Long id) {
         try {
             Task task = taskServiceImpl.unassignTask(id);
@@ -137,6 +154,7 @@ public class TaskControllerV1 {
     }
 
     @PutMapping("/{id}/complete")
+    @PreAuthorize("@security.canModifyTask(#id)")
     public ResponseEntity<TaskResponseDto> markAsCompleted(@PathVariable Long id) {
         try {
             Task task = taskServiceImpl.markTaskAsCompleted(id);
@@ -148,6 +166,7 @@ public class TaskControllerV1 {
     }
 
     @PutMapping("/{id}/start")
+    @PreAuthorize("@security.canModifyTask(#id)")
     public ResponseEntity<TaskResponseDto> moveToInProgress(@PathVariable Long id) {
         try {
             Task task = taskServiceImpl.moveTaskToInProgress(id);
@@ -159,6 +178,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/project/{projectId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<List<TaskSummaryDto>> getTasksByProject(@PathVariable Long projectId) {
         List<Task> tasks = taskServiceImpl.getTasksByProject(projectId);
         List<TaskSummaryDto> taskDtos = tasks.stream()
@@ -169,6 +189,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/developer/{developerId}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<List<TaskSummaryDto>> getTasksByDeveloper(@PathVariable Long developerId) {
         List<Task> tasks = taskServiceImpl.getTasksByDeveloper(developerId);
         List<TaskSummaryDto> taskDtos = tasks.stream()
@@ -179,6 +200,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/unassigned")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<List<TaskSummaryDto>> getUnassignedTasks() {
         List<Task> tasks = taskServiceImpl.getUnassignedTasks();
         List<TaskSummaryDto> taskDtos = tasks.stream()
@@ -189,6 +211,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/status")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<List<TaskSummaryDto>> getTasksByStatus(@RequestParam TaskStatus status) {
         List<Task> tasks = taskServiceImpl.getTasksByStatus(status);
         List<TaskSummaryDto> taskDtos = tasks.stream()
@@ -199,6 +222,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/overdue")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<List<TaskSummaryDto>> getOverdueTasks() {
         List<Task> tasks = taskServiceImpl.getOverdueTasks();
         List<TaskSummaryDto> taskDtos = tasks.stream()
@@ -209,6 +233,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/due-within/{days}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<List<TaskSummaryDto>> getTasksDueWithinDays(@PathVariable int days) {
         List<Task> tasks = taskServiceImpl.getTasksDueWithinDays(days);
         List<TaskSummaryDto> taskDtos = tasks.stream()
@@ -229,6 +254,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/overdue-projects")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<List<TaskSummaryDto>> getTasksInOverdueProjects() {
         List<Task> tasks = taskServiceImpl.getTasksInOverdueProjects();
         List<TaskSummaryDto> taskDtos = tasks.stream()
@@ -239,12 +265,14 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/stats/count-by-status")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<Map<TaskStatus, Long>> getTaskCountsByStatus() {
         Map<TaskStatus, Long> counts = taskServiceImpl.getTaskCountsByStatus();
         return ResponseEntity.ok(counts);
     }
 
     @GetMapping("/stats/top-developers")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<List<Map<String, Object>>> getTopDevelopers(
             @RequestParam(defaultValue = "5") int limit) {
         List<Map<String, Object>> topDevelopers = taskServiceImpl.getTopDevelopersWithMostTasks(limit);
@@ -252,6 +280,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/stats/project/{projectId}/count")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<Map<String, Long>> getTaskCountByProject(@PathVariable Long projectId) {
         long count = taskServiceImpl.getTaskCountByProject(projectId);
         Map<String, Long> response = Map.of("projectId", projectId, "taskCount", count);
@@ -259,6 +288,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/stats/developer/{developerId}/count")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_DEVELOPER')")
     public ResponseEntity<Map<String, Long>> getTaskCountByDeveloper(@PathVariable Long developerId) {
         long count = taskServiceImpl.getTaskCountByDeveloper(developerId);
         Map<String, Long> response = Map.of("developerId", developerId, "taskCount", count);
@@ -266,6 +296,7 @@ public class TaskControllerV1 {
     }
 
     @GetMapping("/projects-without-task")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     public ResponseEntity<List<Project>> getProjectsWithoutTasks(){
         return ResponseEntity.ok(taskServiceImpl.getProjectsWithoutTasks());
     }

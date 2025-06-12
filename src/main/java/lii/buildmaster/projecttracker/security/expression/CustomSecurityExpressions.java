@@ -69,6 +69,10 @@ public class CustomSecurityExpressions {
         return SecurityUtils.isAdmin() || SecurityUtils.isManager();
     }
 
+    public boolean canUnassignTask() {
+        return SecurityUtils.isAdmin() || SecurityUtils.isManager();
+    }
+
     private boolean isAssignedToProject(Long projectId) {
         String currentUsername = SecurityUtils.getCurrentUsername();
         if (currentUsername == null) {

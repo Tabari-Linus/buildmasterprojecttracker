@@ -132,4 +132,20 @@ public class ProjectServiceImpl implements ProjectService {
         return projectRepository.save(project);
 
     }
+
+//    public Object getProjectStats(Long id) {
+//        Optional<Project> projectOpt = projectRepository.findById(id);
+//        if (projectOpt.isPresent()) {
+//            Project project = projectOpt.get();
+//
+//            return calculateProjectStats(project);
+//        } else {
+//            throw new ProjectNotFoundException(id);
+//        }
+//
+//    }
+//
+//    private Object calculateProjectStats(Project project) {
+//
+//    }
 }
