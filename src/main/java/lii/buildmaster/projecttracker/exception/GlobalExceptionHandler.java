@@ -208,8 +208,6 @@ public class GlobalExceptionHandler {
         } else if (ex.getMessage() != null && ex.getMessage().contains("duplicate key")) {
             message = "A record with the same unique identifier already exists.";
         } else if (ex.getMessage() != null) {
-            // In development, you might want to show the actual message
-            // In production, you should log it but return a generic message
             message = "Error: " + ex.getMessage();
         }
 
@@ -223,11 +221,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleGenericException(Exception ex, WebRequest request) {
         logger.error("Unexpected error occurred at path: " + request.getDescription(false), ex);
 
-        // In development, show the actual error message
-        // TODO: Remove this in production
-        String message = "An unexpected error occurred: " + ex.getMessage() +
-                " (Type: " + ex.getClass().getSimpleName() + ")";
-
+        String message = "An unexpected error occurred";
         return new ResponseEntity<>(
                 new ErrorResponseDto(message,
                         "Internal Server Error",
