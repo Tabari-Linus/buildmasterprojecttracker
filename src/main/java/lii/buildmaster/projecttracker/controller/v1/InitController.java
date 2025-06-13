@@ -30,12 +30,10 @@ public class InitController {
         try {
             logger.info("Starting role initialization...");
 
-            // First, let's check what roles exist
             long existingRoles = roleRepository.count();
             result.put("existingRolesCount", existingRoles);
             logger.info("Existing roles count: {}", existingRoles);
 
-            // Initialize all roles
             Arrays.stream(RoleName.values()).forEach(roleName -> {
                 try {
                     if (!roleRepository.existsByName(roleName)) {
@@ -76,16 +74,13 @@ public class InitController {
         Map<String, Object> result = new HashMap<>();
 
         try {
-            // Check if repository is working
             result.put("repositoryWorking", true);
             result.put("roleCount", roleRepository.count());
 
-            // List all role names
             result.put("availableRoleNames", Arrays.stream(RoleName.values())
                     .map(Enum::name)
                     .toArray());
 
-            // Check if we can query
             for (RoleName roleName : RoleName.values()) {
                 result.put("exists_" + roleName, roleRepository.existsByName(roleName));
             }
