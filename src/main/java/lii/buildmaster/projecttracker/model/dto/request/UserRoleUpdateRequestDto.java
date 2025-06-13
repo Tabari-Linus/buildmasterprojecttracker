@@ -15,4 +15,5 @@ import java.util.Set;
 public class UserRoleUpdateRequestDto {
     @NotEmpty(message = "At least one role must be specified")
     private Set<String> roles;
+
 }
