@@ -1,7 +1,10 @@
 package lii.buildmaster.projecttracker.repository.jpa;
 
+import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +15,9 @@ import java.util.List;
 
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
+
+    @Query("SELECT p FROM Project p ")
+    Page<ProjectResponseDto> getAllProjects(Pageable pageable);
 
     List<Project> findByStatus(ProjectStatus status);
 
@@ -25,4 +31,16 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findOverdueProjects(@Param("deadline") LocalDateTime deadline);
 
     long countByStatus(ProjectStatus status);
+
+    @Query("SELECT p FROM Project p JOIN Task t ON p.id = t.project.id WHERE t.developer.name = :username AND p.status = :status")
+    Page<Project> findByStatusAndDeveloperUsername (ProjectStatus status, String username, Pageable pageable);
+
+    @Query("SELECT p FROM Project p JOIN Task t ON p.id = t.project.id WHERE t.developer.name = :username AND p.status = :status")
+    Page<Project> findByStatusAndDeveloperUsername (ProjectStatus status, String username);
+
+    Page<Project> findProjectsByDeveloperUsername(String username, Pageable pageable);
+
+    Page<Project> findProjectsByDeveloperUsername(String username);
+
+    Object findByStatus(ProjectStatus status, Pageable pageable);
 }
