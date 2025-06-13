@@ -51,10 +51,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         clearAuthenticationAttributes(request, response);
 
-        // Update last login time
         updateLastLogin(authentication);
 
-        // Log successful OAuth2 authentication
         if (authentication.getPrincipal() instanceof CustomOAuth2User) {
             CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
             log.info("OAuth2 authentication successful for user: {} (ID: {})",
@@ -76,11 +74,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         String targetUrl = redirectUri.orElse(defaultSuccessUrl);
 
-        // Generate JWT token
         String token = jwtUtils.generateJwtToken(authentication);
         String refreshToken = jwtUtils.generateRefreshToken(authentication.getName());
 
-        // Get user info
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
         return UriComponentsBuilder.fromUriString(targetUrl)
@@ -113,7 +109,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             if (authentication.getPrincipal() instanceof CustomOAuth2User) {
                 CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
-                // Alternative approach: Update the user entity directly
                 Optional<User> userOptional = userRepository.findById(oAuth2User.getId());
                 if (userOptional.isPresent()) {
                     User user = userOptional.get();
@@ -124,8 +119,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             }
         } catch (Exception e) {
             log.error("Failed to update last login time", e);
-            // Don't fail the authentication process due to this error
-
         }
     }
 }
