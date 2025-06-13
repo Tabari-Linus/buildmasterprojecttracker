@@ -41,4 +41,8 @@ public interface ProjectMapper {
                 .filter(task -> task.getStatus() == TaskStatus.DONE)
                 .count();
     }
+
+    @Mapping(target = "taskCount", expression = "java(getTaskCount(project))")
+    @Mapping(target = "completedTaskCount", expression = "java(getCompletedTaskCount(project))")
+    ProjectResponseDto toSummaryResponseDto(Project project);
 }
