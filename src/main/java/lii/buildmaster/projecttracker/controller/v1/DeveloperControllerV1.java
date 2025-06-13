@@ -172,25 +172,5 @@ public class DeveloperControllerV1 {
         return ResponseEntity.ok(response);
     }
 
-//    @PatchMapping("/{id}/skills")
-//    @PreAuthorize("@security.canModifyDeveloper(#id)")
-//    public ResponseEntity<DeveloperResponseDto> updateDeveloperSkills(
-//            @PathVariable Long id,
-//            @RequestParam String skills) {
-//        return ResponseEntity.ok(developerService.updateDeveloperSkills(id, skills));
-//    }
-//    @GetMapping("/skills/{skill}")
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
-//    public ResponseEntity<Page<DeveloperResponseDto>> getDevelopersBySkill(
-//            @PathVariable String skill,
-//            Pageable pageable) {
-//        return ResponseEntity.ok(developerService.getDevelopersBySkill(skill, pageable));
-//    }
-//
-//    @GetMapping("/available")
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
-//    public ResponseEntity<Page<DeveloperResponseDto>> getAvailableDevelopers(Pageable pageable) {
-//        return ResponseEntity.ok(developerService.getAvailableDevelopers(pageable));
-//    }
 
 }
