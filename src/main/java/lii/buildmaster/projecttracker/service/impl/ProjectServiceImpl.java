@@ -3,30 +3,35 @@ package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
+import lii.buildmaster.projecttracker.exception.UnauthorizedException;
+import lii.buildmaster.projecttracker.mapper.ProjectMapper;
+import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
 import lii.buildmaster.projecttracker.service.ProjectService;
+import lii.buildmaster.projecttracker.util.SecurityUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
-    public ProjectServiceImpl(ProjectRepository projectRepository) {
-        this.projectRepository = projectRepository;
-    }
+    private final ProjectMapper projectMapper;
 
     @Override
     @Auditable(action = ActionType.CREATE, entityType = EntityType.PROJECT)
@@ -40,26 +45,91 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    public List<Project> getAllProjects() {
+        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
+            return projectRepository.findAll();
+        } else if (SecurityUtils.isDeveloper()) {
+            String username = SecurityUtils.getCurrentUsername();
+            return (List<Project>) projectRepository.findProjectsByDeveloperUsername(username);
+        } else if (SecurityUtils.isContractor()) {
+            return projectRepository.findAll();
+        } else {
+            throw new UnauthorizedException("You don't have permission to view projects");
+        }
+    }
+
     @Transactional(readOnly = true)
     @Cacheable(value = "projects", key = "'all'")
-    public List<Project> getAllProjects() {
-        return projectRepository.findAll();
+    @Override
+    public Page<ProjectResponseDto> getAllProjects(Pageable pageable) {
+        Page<Project> projects;
+
+        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
+            projects = projectRepository.findAll(pageable);
+        } else if (SecurityUtils.isDeveloper()) {
+            String username = SecurityUtils.getCurrentUsername();
+            projects = projectRepository.findProjectsByDeveloperUsername(username, pageable);
+        } else if (SecurityUtils.isContractor()) {
+            // Contractors see limited project information
+            projects = (Page<Project>) projectRepository.findAll(pageable);
+            // Note: You might want to return a simplified DTO for contractors
+        } else {
+            throw new UnauthorizedException("You don't have permission to view projects");
+        }
+
+        return projects.map(projectMapper::toResponseDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "projects", key = "#id")
-    public Project getProjectById(Long id) {
-        return projectRepository.findById(id).orElseThrow(() -> new ProjectNotFoundException(id));
+    public ProjectResponseDto getProjectById(Long id) {
+        Project project = projectRepository.findById(id)
+                .orElseThrow(() -> new ProjectNotFoundException(id));
+
+        // Additional security check already done by @PreAuthorize
+        // For contractors, you might want to return limited information
+        if (SecurityUtils.isContractor()) {
+            return projectMapper.toSummaryResponseDto(project);
+        }
+
+        return projectMapper.toResponseDto(project);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    @Cacheable(value = "projects", key = "'status_' + #status.name()")
     public List<Project> getProjectsByStatus(ProjectStatus status) {
-        return projectRepository.findByStatus(status);
+        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
+            return (List<Project>) projectRepository.findByStatus(status);
+        } else if (SecurityUtils.isDeveloper()) {
+            String username = SecurityUtils.getCurrentUsername();
+            return (List<Project>) projectRepository.findByStatusAndDeveloperUsername(status, username);
+        } else {
+            throw new UnauthorizedException("You don't have permission to view projects by status");
+        }
     }
 
+    @Override
+    public Page<ProjectResponseDto> getProjectsByStatus(String status, Pageable pageable) {
+        return null;
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "projects", key = "'status_' + #status.name()")
+    @Override
+    public Page<ProjectResponseDto> getProjectsByStatus(ProjectStatus status, Pageable pageable) {
+        Page<Project> projects;
+
+        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
+            projects = (Page<Project>) projectRepository.findByStatus(status, pageable);
+        } else if (SecurityUtils.isDeveloper()) {
+            String username = SecurityUtils.getCurrentUsername();
+            projects = projectRepository.findByStatusAndDeveloperUsername(status, username, pageable);
+        } else {
+            throw new UnauthorizedException("You don't have permission to filter projects");
+        }
+
+        return projects.map(projectMapper::toResponseDto);
+    }
     @Override
     @Auditable(action = ActionType.UPDATE, entityType = EntityType.PROJECT)
     @Caching(evict = {
