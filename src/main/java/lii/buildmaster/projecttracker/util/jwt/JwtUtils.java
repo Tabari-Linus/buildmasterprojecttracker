@@ -9,13 +9,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority; // Import this
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List; // Import this
 import java.util.Map;
+import java.util.stream.Collectors; // Import this
 
 
 @Component
@@ -34,8 +37,9 @@ public class JwtUtils {
     private Key key() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
 
-        if (keyBytes.length < 64) { // 64 bytes = 512 bits
+        if (keyBytes.length < 64) {
             logger.warn("JWT secret key is too short for HS512. Generating a secure key.");
+
             SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
             return key;
         }
@@ -45,23 +49,38 @@ public class JwtUtils {
 
     public String generateJwtToken(Authentication authentication) {
         String username;
+        List<String> roles;
 
         if (authentication.getPrincipal() instanceof User userPrincipal) {
             username = userPrincipal.getUsername();
+            roles = userPrincipal.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList());
         } else if (authentication.getPrincipal() instanceof CustomOAuth2User oAuth2User) {
             username = oAuth2User.getUsername();
+
+            roles = oAuth2User.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList());
         } else {
             throw new IllegalArgumentException("Unknown principal type: " +
                     authentication.getPrincipal().getClass().getName());
         }
 
-        return generateTokenFromUsername(username);
+        return generateToken(username, roles);
+    }
+
+    public String generateToken(String username, List<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles); // Add roles to the claims
+        return createToken(claims, username, jwtExpirationMs);
     }
 
     public String generateTokenFromUsername(String username) {
         Map<String, Object> claims = new HashMap<>();
         return createToken(claims, username, jwtExpirationMs);
     }
+
 
     public String generateRefreshToken(String username) {
         Map<String, Object> claims = new HashMap<>();
