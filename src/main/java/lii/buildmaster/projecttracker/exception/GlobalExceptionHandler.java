@@ -118,6 +118,31 @@ public class GlobalExceptionHandler {
         );
     }
 
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponseDto> handleUnauthorizedException(UnauthorizedException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto(ex.getMessage(), "Unauthorized", HttpStatus.UNAUTHORIZED.value()),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponseDto> handleForbiddenException(ForbiddenException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto(ex.getMessage(), "Forbidden", HttpStatus.FORBIDDEN.value()),
+                HttpStatus.FORBIDDEN
+        );
+    }
+
+    @ExceptionHandler(ResourceAccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDto> handleResourceAccessDeniedException(ResourceAccessDeniedException ex) {
+        return new ResponseEntity<>(
+                new ErrorResponseDto(ex.getMessage(), "Access Denied", HttpStatus.FORBIDDEN.value()),
+                HttpStatus.FORBIDDEN
+        );
+    }
+
     @ExceptionHandler(OAuth2AuthenticationProcessingException.class)
     public ResponseEntity<ErrorResponseDto> handleOAuth2AuthenticationException(OAuth2AuthenticationProcessingException ex) {
         return new ResponseEntity<>(
