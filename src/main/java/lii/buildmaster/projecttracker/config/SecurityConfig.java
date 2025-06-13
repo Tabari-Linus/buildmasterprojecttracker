@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,7 +40,6 @@ public class SecurityConfig {
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
 
     @Bean
@@ -56,6 +56,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable
+                )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(unauthorizedHandler)
                 )
@@ -63,28 +65,26 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/", "/oauth2-test.html", "/login/**", "/oauth2/**", "/api/v1/error").permitAll()
+                        .requestMatchers("/", "/oauth2-test.html", "/login/**", "/oauth2/**","/api/v1/auth/**", "/api/v1/dashboard", "/api/v1/error").permitAll()
                         .requestMatchers("/api/v1/test/**").permitAll()
                         .requestMatchers("/api/v1/oauth2/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("oauth2-test.html").permitAll()
 
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .formLogin(Customizer.withDefaults())
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/oauth2-test.html") // custom login page
-                        .defaultSuccessUrl("/api/v1/projects", true)
-                        .authorizationEndpoint(authorization -> authorization
+                        .loginPage("/oauth2-test.html")
+                        .authorizationEndpoint(auth -> auth
                                 .baseUri("/oauth2/authorize")
                                 .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository)
                         )
-                        .redirectionEndpoint(redirection -> redirection
+                        .defaultSuccessUrl("/api/v1/dashboard", true)
+                        .redirectionEndpoint(redir -> redir
                                 .baseUri("/login/oauth2/code/*")
                         )
                         .userInfoEndpoint(userInfo -> userInfo
@@ -92,7 +92,8 @@ public class SecurityConfig {
                         )
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler(oAuth2AuthenticationFailureHandler)
-                ).logout(logout -> logout
+                )
+                .logout(logout -> logout
                         .logoutSuccessUrl("/oauth2-test.html")
                         .permitAll()
                 );
