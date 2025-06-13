@@ -59,11 +59,6 @@ public class DeveloperControllerV1 {
         return ResponseEntity.ok(developerMapper.toResponseDto(developer));
     }
 
-//    @GetMapping("/me")
-//    @PreAuthorize("hasRole('ROLE_DEVELOPER')")
-//    public ResponseEntity<DeveloperResponseDto> getCurrentDeveloperProfile() {
-//        return ResponseEntity.ok(developerService.getCurrentDeveloperProfile());
-//    }
 
     @GetMapping("/email")
     @PreAuthorize("@security.canViewAllDevelopers() or @security.canModifyDeveloper(#id)")
