@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableArgumentResolver;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,7 @@ public class ProjectControllerV1 {
     public ResponseEntity<Page<ProjectSummaryDto>> getAllProjects(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
-        List<Project> projects = projectServiceImpl.getAllProjects();
+        List<Project> projects = projectServiceImpl.getAllProjects(pageable);
         List<ProjectSummaryDto> projectDtos = projects.stream()
                 .map(projectMapper::toSummaryDto)
                 .collect(Collectors.toList());
@@ -107,8 +108,9 @@ public class ProjectControllerV1 {
 
     @GetMapping("/status")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
-    public ResponseEntity<List<ProjectSummaryDto>> getProjectsByStatus(@RequestParam ProjectStatus status) {
-        List<Project> projects = projectServiceImpl.getProjectsByStatus(status);
+    public ResponseEntity<List<ProjectSummaryDto>> getProjectsByStatus(@PageableDefault(size = 10, sort = "createdAt") Pageable pageable, @RequestParam ProjectStatus status) {
+
+        Page<ProjectResponseDto> projects = projectServiceImpl.getProjectsByStatus(status, pageable);
         List<ProjectSummaryDto> projectDtos = projects.stream()
                 .map(projectMapper::toSummaryDto)
                 .collect(Collectors.toList());

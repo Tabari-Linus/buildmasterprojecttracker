@@ -20,11 +20,12 @@ public interface ProjectService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "projects", key = "'all'")
-    Page<ProjectResponseDto> getAllProjects(Pageable pageable);
+    List<Project> getAllProjects(Pageable pageable);
 
     ProjectResponseDto getProjectById(Long id);
 
-    List<Project> getProjectsByStatus(ProjectStatus status);
+    List<Project> getProjectsByStatus(String status);
+
 
     @Transactional(readOnly = true)
     @Cacheable(value = "projects", key = "'status_' + #status.name()")
