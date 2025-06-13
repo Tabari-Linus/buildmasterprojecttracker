@@ -2,34 +2,51 @@ package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.exception.DeveloperNotFoundException;
+import lii.buildmaster.projecttracker.exception.EmailAlreadyExistsException;
 import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
 import lii.buildmaster.projecttracker.model.entity.Developer;
+import lii.buildmaster.projecttracker.model.entity.Role;
+import lii.buildmaster.projecttracker.model.entity.User;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
+import lii.buildmaster.projecttracker.model.enums.AuthProvider;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
+import lii.buildmaster.projecttracker.model.enums.RoleName;
 import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
+import lii.buildmaster.projecttracker.repository.jpa.RoleRepository;
+import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
 import lii.buildmaster.projecttracker.service.AuditLogService;
 import lii.buildmaster.projecttracker.service.DeveloperService;
 import lii.buildmaster.projecttracker.util.AuditUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.security.SecureRandom;
+import java.util.*;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class DeveloperServiceImpl implements DeveloperService {
 
     private final DeveloperRepository developerRepository;
 
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public DeveloperServiceImpl(DeveloperRepository developerRepository, AuditLogService auditLogService,
-                                AuditUtil auditUtil) {
-        this.developerRepository = developerRepository;
+    private static final int GENERATED_PASSWORD_LENGTH = 12;
+    private String generateRandomPassword() {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[GENERATED_PASSWORD_LENGTH];
+        random.nextBytes(bytes);
+        String base64Password = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        String cleanPassword = base64Password.replaceAll("[^a-zA-Z0-9]", "");
+        return cleanPassword.substring(0, Math.min(GENERATED_PASSWORD_LENGTH, cleanPassword.length()));
     }
 
     @Override
@@ -40,11 +57,32 @@ public class DeveloperServiceImpl implements DeveloperService {
     })
     public Developer createDeveloper(String name, String email, String skills) {
 
-        if (developerRepository.existsByEmail(email)) {
-            throw new RuntimeException("Developer with email " + email + " already exists");
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException("A user with this email already exists: " + email);
         }
 
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setUsername(email);
+        String password = generateRandomPassword();
+        newUser.setPassword(passwordEncoder.encode(password));
+        newUser.setProvider(AuthProvider.LOCAL);
+
+        String[] nameParts = name.split(" ", 2);
+        newUser.setFirstName(nameParts.length > 0 ? nameParts[0] : "");
+        newUser.setLastName(nameParts.length > 1 ? nameParts[1] : "");
+        newUser.setEnabled(true);
+
+        Role developerRole = roleRepository.findByName(RoleName.ROLE_DEVELOPER)
+                .orElseThrow(() -> new RuntimeException("Error: ROLE_DEVELOPER not found. Please ensure roles are initialized in the database."));
+
+        Set<Role> roles = new HashSet<>();
+        roles.add(developerRole);
+        newUser.setRoles(roles);
+        User savedUser = userRepository.save(newUser);
+
         Developer developer = new Developer(name, email, skills);
+        developer.setUser(savedUser);
         return developerRepository.save(developer);
 
     }
@@ -74,18 +112,24 @@ public class DeveloperServiceImpl implements DeveloperService {
     @Auditable(action = ActionType.UPDATE, entityType = EntityType.DEVELOPER)
     @Caching(evict = {
             @CacheEvict(value = "developers", key = "#id"),
-            @CacheEvict(value = "developers", key = "'all'"),
+            @CacheEvict(value = "developers", allEntries = true),
             @CacheEvict(value = "developers", key = "'email_' + #email"),
             @CacheEvict(value = "developerStats", allEntries = true)
     })
     public Developer updateDeveloper(Long id, String name, String email, String skills) {
         Developer developer = developerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Developer not found with id: " + id));
+                .orElseThrow(() -> new DeveloperNotFoundException(id));
 
-
-        Optional<Developer> existingDeveloper = developerRepository.findByEmail(email);
-        if (existingDeveloper.isPresent() && !existingDeveloper.get().getId().equals(id)) {
-            throw new RuntimeException("Email " + email + " is already taken by another developer");
+        if (!developer.getEmail().equals(email)) {
+            if (userRepository.existsByEmail(email)) {
+                throw new EmailAlreadyExistsException("A user with this email already exists: " + email);
+            }
+            User associatedUser = developer.getUser();
+            if (associatedUser != null) {
+                associatedUser.setEmail(email);
+                associatedUser.setUsername(email);
+                userRepository.save(associatedUser);
+            }
         }
 
         developer.setName(name);
@@ -93,11 +137,11 @@ public class DeveloperServiceImpl implements DeveloperService {
         developer.setSkills(skills);
 
         return developerRepository.save(developer);
-
     }
 
     @Override
     @Auditable(action = ActionType.DELETE, entityType = EntityType.DEVELOPER)
+    @Transactional
     @Caching(evict = {
             @CacheEvict(value = "developers", allEntries = true),
             @CacheEvict(value = "developerStats", allEntries = true),
@@ -106,9 +150,13 @@ public class DeveloperServiceImpl implements DeveloperService {
     })
     public void deleteDeveloper(Long id) {
         Developer developer = developerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Developer not found with id: " + id));
+                .orElseThrow(() -> new DeveloperNotFoundException(id));
 
+        User associatedUser = developer.getUser();
         developerRepository.delete(developer);
+         if (associatedUser != null) {
+             userRepository.delete(associatedUser);
+         }
     }
 
     @Override
@@ -122,14 +170,13 @@ public class DeveloperServiceImpl implements DeveloperService {
     @Transactional(readOnly = true)
     @Cacheable(value = "developers", key = "'skill_' + #skill")
     public List<Developer> findDevelopersBySkill(String skill) {
-        return developerRepository.findDevelopersBySkill(skill);
+        return developerRepository.findBySkillsContainingIgnoreCase(skill);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "developerStats", key = "'email_exists_' + #email")
     public boolean isEmailTaken(String email) {
-        return developerRepository.existsByEmail(email);
+        return userRepository.existsByEmail(email) || developerRepository.existsByEmail(email);
     }
 
     @Override
