@@ -38,8 +38,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("SELECT p FROM Project p JOIN Task t ON p.id = t.project.id WHERE t.developer.name = :username AND p.status = :status")
     Page<Project> findByStatusAndDeveloperUsername (ProjectStatus status, String username);
 
+    @Query("SELECT p FROM Project p JOIN Task t ON p.id = t.project.id WHERE t.developer.name = :username")
     Page<Project> findProjectsByDeveloperUsername(String username, Pageable pageable);
 
+    @Query("SELECT p FROM Project p JOIN Task t ON p.id = t.project.id WHERE t.developer.name = :username")
     Page<Project> findProjectsByDeveloperUsername(String username);
 
     Object findByStatus(ProjectStatus status, Pageable pageable);
