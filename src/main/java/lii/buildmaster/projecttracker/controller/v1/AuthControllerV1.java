@@ -219,4 +219,16 @@ public class AuthControllerV1 {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(MessageResponseDto.error("Invalid or expired token"));
     }
+
+    @GetMapping("/my-details")
+    public ResponseEntity<?> getMyDetails() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(MessageResponseDto.error("User is not authenticated"));
+        }
+
+        User user = (User) authentication.getPrincipal();
+        return ResponseEntity.ok(user);
+    }
 }
