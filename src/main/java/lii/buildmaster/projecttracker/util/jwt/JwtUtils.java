@@ -72,7 +72,7 @@ public class JwtUtils {
 
     public String generateToken(String username, List<String> roles) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles); // Add roles to the claims
+        claims.put("roles", roles);
         return createToken(claims, username, jwtExpirationMs);
     }
 
