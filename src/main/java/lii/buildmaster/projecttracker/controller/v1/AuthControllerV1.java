@@ -24,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +56,6 @@ public class AuthControllerV1 {
         logger.info("Login attempt for user: {}", loginRequest.getEmail());
 
         try {
-            // Authenticate using email as username
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -63,18 +63,16 @@ public class AuthControllerV1 {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Generate JWT token
             String jwt = jwtUtils.generateJwtToken(authentication);
             String refreshToken = jwtUtils.generateRefreshToken(
                     ((User) authentication.getPrincipal()).getUsername());
 
             User userDetails = (User) authentication.getPrincipal();
 
-            // Update last login time
             userRepository.updateLastLogin(userDetails.getId(), LocalDateTime.now());
 
             List<String> roles = userDetails.getAuthorities().stream()
-                    .map(item -> item.getAuthority())
+                    .map(GrantedAuthority::getAuthority)
                     .collect(Collectors.toList());
 
             logger.info("User {} logged in successfully", userDetails.getEmail());
@@ -88,7 +86,7 @@ public class AuthControllerV1 {
                     roles));
         } catch (Exception e) {
             logger.error("Authentication failed for user: {}", loginRequest.getEmail(), e);
-            throw e; // Let the GlobalExceptionHandler handle it
+            throw e;
         }
     }
 
@@ -99,21 +97,18 @@ public class AuthControllerV1 {
                 registerRequest.getUsername(), registerRequest.getEmail());
 
         try {
-            // Check if username exists
             if (userRepository.existsByUsername(registerRequest.getUsername())) {
                 logger.warn("Registration failed: Username {} already exists", registerRequest.getUsername());
                 return ResponseEntity.badRequest()
                         .body(MessageResponseDto.error("Username is already taken!"));
             }
 
-            // Check if email exists
-            if (userRepository.existsByEmail(registerRequest.getEmail())) {
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
                 logger.warn("Registration failed: Email {} already exists", registerRequest.getEmail());
                 return ResponseEntity.badRequest()
                         .body(MessageResponseDto.error("Email is already in use!"));
             }
 
-            // Create new user
             User user = User.builder()
                     .username(registerRequest.getUsername())
                     .email(registerRequest.getEmail())
@@ -124,15 +119,13 @@ public class AuthControllerV1 {
                     .enabled(true)
                     .build();
 
-            // Assign role
             Set<Role> roles = new HashSet<>();
             String requestedRole = registerRequest.getRole();
 
             if (requestedRole == null || requestedRole.isEmpty()) {
-                requestedRole = "DEVELOPER"; // Default role
+                requestedRole = "DEVELOPER";
             }
 
-            // Validate and assign requested role
             RoleName roleName;
             try {
                 roleName = RoleName.valueOf("ROLE_" + requestedRole.toUpperCase());
@@ -158,20 +151,18 @@ public class AuthControllerV1 {
             User savedUser = userRepository.save(user);
             logger.info("User {} saved successfully with ID: {}", savedUser.getUsername(), savedUser.getId());
 
-            // If role is DEVELOPER, create a Developer entity
             if (roleName == RoleName.ROLE_DEVELOPER) {
                 try {
                     Developer developer = new Developer();
                     developer.setName(savedUser.getFirstName() + " " + savedUser.getLastName());
                     developer.setEmail(savedUser.getEmail());
                     developer.setUser(savedUser);
-                    developer.setSkills(""); // Default empty skills
+                    developer.setSkills("");
 
                     developerRepository.save(developer);
                     logger.info("Created developer entity for user: {}", savedUser.getUsername());
                 } catch (Exception e) {
                     logger.error("Failed to create developer entity for user: {}", savedUser.getUsername(), e);
-                    // Continue with registration even if developer creation fails
                 }
             }
 
@@ -183,7 +174,7 @@ public class AuthControllerV1 {
 
         } catch (Exception e) {
             logger.error("Registration failed for user: {}", registerRequest.getEmail(), e);
-            throw e; // Let GlobalExceptionHandler handle it
+            throw e;
         }
     }
 
@@ -192,7 +183,6 @@ public class AuthControllerV1 {
         String requestRefreshToken = request.getRefreshToken();
 
         try {
-            // Validate refresh token
             if (jwtUtils.validateJwtToken(requestRefreshToken)) {
                 String username = jwtUtils.getUserNameFromJwtToken(requestRefreshToken);
                 String newAccessToken = jwtUtils.generateTokenFromUsername(username);
