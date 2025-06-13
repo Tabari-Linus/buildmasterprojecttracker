@@ -46,39 +46,26 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public List<Project> getAllProjects() {
-        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            return projectRepository.findAll();
-        } else if (SecurityUtils.isDeveloper()) {
-            String username = SecurityUtils.getCurrentUsername();
-            return (List<Project>) projectRepository.findProjectsByDeveloperUsername(username);
-        } else if (SecurityUtils.isContractor()) {
-            return projectRepository.findAll();
-        } else {
-            throw new UnauthorizedException("You don't have permission to view projects");
-        }
+        return projectRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
-    @Cacheable(value = "projects", key = "'all'")
-    @Override
-    public Page<ProjectResponseDto> getAllProjects(Pageable pageable) {
-        Page<Project> projects;
 
+    @Override
+    public List<Project> getAllProjects(Pageable pageable) {
         if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            projects = projectRepository.findAll(pageable);
+            return projectRepository.findAll();
         } else if (SecurityUtils.isDeveloper()) {
             String username = SecurityUtils.getCurrentUsername();
-            projects = projectRepository.findProjectsByDeveloperUsername(username, pageable);
+            return (List<Project>) projectRepository.findProjectsByDeveloperUsername(username, pageable );
         } else if (SecurityUtils.isContractor()) {
             // Contractors see limited project information
-            projects = (Page<Project>) projectRepository.findAll(pageable);
-            // Note: You might want to return a simplified DTO for contractors
+            return projectRepository.findAll(); // Note: You might want to return a simplified list for contractors
         } else {
             throw new UnauthorizedException("You don't have permission to view projects");
         }
-
-        return projects.map(projectMapper::toResponseDto);
     }
+
+
 
     @Override
     @Transactional(readOnly = true)
@@ -96,21 +83,19 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.toResponseDto(project);
     }
 
+
     @Override
-    public List<Project> getProjectsByStatus(ProjectStatus status) {
-        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            return (List<Project>) projectRepository.findByStatus(status);
-        } else if (SecurityUtils.isDeveloper()) {
-            String username = SecurityUtils.getCurrentUsername();
-            return (List<Project>) projectRepository.findByStatusAndDeveloperUsername(status, username);
-        } else {
-            throw new UnauthorizedException("You don't have permission to view projects by status");
-        }
+    public List<Project> getProjectsByStatus(String status) {
+        ProjectStatus projectStatus = ProjectStatus.valueOf(status.toUpperCase());
+        return projectRepository.findProjectByStatus((projectStatus));
     }
 
     @Override
     public Page<ProjectResponseDto> getProjectsByStatus(String status, Pageable pageable) {
-        return null;
+        ProjectStatus projectStatus = ProjectStatus.valueOf(status.toUpperCase());
+        Page<Project> projectPage = projectRepository.findByStatus(projectStatus, pageable);
+        return projectPage.map(projectMapper::toResponseDto);
+
     }
 
     @Transactional(readOnly = true)
@@ -120,12 +105,16 @@ public class ProjectServiceImpl implements ProjectService {
         Page<Project> projects;
 
         if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            projects = (Page<Project>) projectRepository.findByStatus(status, pageable);
+            projects = projectRepository.findByStatus(status, pageable);
         } else if (SecurityUtils.isDeveloper()) {
             String username = SecurityUtils.getCurrentUsername();
             projects = projectRepository.findByStatusAndDeveloperUsername(status, username, pageable);
+        } else if (SecurityUtils.isContractor()) {
+            // Contractors see limited project information
+            projects = (Page<Project>) projectRepository.findByStatus(status, pageable);
+            // Note: You might want to return a simplified DTO for contractors
         } else {
-            throw new UnauthorizedException("You don't have permission to filter projects");
+            throw new UnauthorizedException("You don't have permission to view projects");
         }
 
         return projects.map(projectMapper::toResponseDto);
