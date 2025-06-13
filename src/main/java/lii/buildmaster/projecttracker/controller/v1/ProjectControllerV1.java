@@ -53,8 +53,8 @@ public class ProjectControllerV1 {
     @GetMapping("/{id}")
     @PreAuthorize("@security.canAccessProject(#id)")
     public ResponseEntity<ProjectResponseDto> getProjectById(@PathVariable Long id) {
-        Project project = projectServiceImpl.getProjectById(id);
-        return ResponseEntity.ok(projectMapper.toResponseDto(project));
+        ProjectResponseDto projectResponseDto = projectServiceImpl.getProjectById(id);
+        return ResponseEntity.ok(projectResponseDto);
     }
 
     @PostMapping
