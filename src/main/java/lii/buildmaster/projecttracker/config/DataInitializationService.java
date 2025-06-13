@@ -1,4 +1,4 @@
-package lii.buildmaster.projecttracker.service.impl;
+package lii.buildmaster.projecttracker.config;
 
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Role;
