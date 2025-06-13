@@ -81,9 +81,9 @@ public class CustomSecurityExpressions {
 
         return projectRepository.findById(projectId)
                 .map(project -> project.getTasks().stream()
-                        .anyMatch(task -> task.getAssignedTo() != null &&
-                                task.getAssignedTo().getUser() != null &&
-                                currentUsername.equals(task.getAssignedTo().getUser().getUsername())))
+                        .anyMatch(task -> task != null &&
+                                task.getDeveloper() != null &&
+                                currentUsername.equals(task.getDeveloper().getUsername())))
                 .orElse(false);
     }
 
@@ -95,9 +95,8 @@ public class CustomSecurityExpressions {
         }
 
         return taskRepository.findById(taskId)
-                .map(task -> task.getAssignedTo() != null &&
-                        task.getAssignedTo().getUser() != null &&
-                        currentUsername.equals(task.getAssignedTo().getUser().getUsername()))
+                .map(task -> task.getDeveloper() != null &&
+                        currentUsername.equals(task.getDeveloper().getUsername()))
                 .orElse(false);
     }
 
