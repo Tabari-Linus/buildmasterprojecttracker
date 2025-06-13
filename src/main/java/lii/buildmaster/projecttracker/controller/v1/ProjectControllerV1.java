@@ -161,10 +161,4 @@ public class ProjectControllerV1 {
         return ResponseEntity.ok(counts);
     }
 
-//    @GetMapping("/{id}/stats")
-//    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
-//    public ResponseEntity<?> getProjectStats(@PathVariable Long id) {
-//        // Implementation for project statistics
-//        return ResponseEntity.ok(projectServiceImpl.getProjectStats(id));
-//    }
 }
