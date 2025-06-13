@@ -1,6 +1,9 @@
 package lii.buildmaster.projecttracker.controller.v1;
 
 import jakarta.validation.Valid;
+import lii.buildmaster.projecttracker.model.dto.request.UserRoleUpdateRequestDto;
+import lii.buildmaster.projecttracker.model.dto.response.UserResponseDto;
+import lii.buildmaster.projecttracker.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,8 +16,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_ADMIN')") // All endpoints require ADMIN role
-public class AdminController {
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+public class AdminControllerV1 {
 
     private final AdminService adminService;
 
@@ -32,7 +35,7 @@ public class AdminController {
     @PutMapping("/users/{id}/roles")
     public ResponseEntity<UserResponseDto> updateUserRoles(
             @PathVariable Long id,
-            @Valid @RequestBody UserRoleUpdateRequest roleUpdateRequest) {
+            @Valid @RequestBody UserRoleUpdateRequestDto roleUpdateRequest) {
         return ResponseEntity.ok(adminService.updateUserRoles(id, roleUpdateRequest));
     }
 
