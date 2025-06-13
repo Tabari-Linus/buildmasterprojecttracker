@@ -40,7 +40,7 @@ public class Developer extends AuditableEntity{
     @Column(name = "skills", length = 500)
     private String skills;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", unique = true)
     @ToString.Exclude
     @JsonBackReference
