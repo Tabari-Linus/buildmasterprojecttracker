@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/rbac-test")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", maxAge = 3600)
 public class RbacTestController {
 
     @GetMapping("/me")
