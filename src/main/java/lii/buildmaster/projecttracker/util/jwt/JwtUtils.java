@@ -5,20 +5,21 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lii.buildmaster.projecttracker.model.entity.User;
 import lii.buildmaster.projecttracker.security.oauth2.CustomOAuth2User;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority; // Import this
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List; // Import this
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors; // Import this
+import java.util.stream.Collectors;
 
 
 @Component
@@ -28,9 +29,11 @@ public class JwtUtils {
     @Value("${app.jwt.secret}")
     private String jwtSecret;
 
+    @Getter
     @Value("${app.jwt.expiration-ms}")
     private int jwtExpirationMs;
 
+    @Getter
     @Value("${app.jwt.refresh-expiration-ms}")
     private int refreshTokenExpirationMs;
 
