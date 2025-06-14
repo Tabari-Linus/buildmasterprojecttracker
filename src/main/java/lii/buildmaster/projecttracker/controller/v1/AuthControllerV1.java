@@ -1,5 +1,7 @@
 package lii.buildmaster.projecttracker.controller.v1;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lii.buildmaster.projecttracker.model.dto.request.LoginRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.RegisterRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.TokenRefreshRequestDto;
@@ -14,6 +16,9 @@ import lii.buildmaster.projecttracker.model.enums.RoleName;
 import lii.buildmaster.projecttracker.repository.jpa.RoleRepository;
 import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
 import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
+import lii.buildmaster.projecttracker.security.oauth2.CustomOAuth2User;
+import lii.buildmaster.projecttracker.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import lii.buildmaster.projecttracker.security.oauth2.CookieUtils;
 import lii.buildmaster.projecttracker.util.jwt.JwtUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +38,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -103,7 +109,7 @@ public class AuthControllerV1 {
                         .body(MessageResponseDto.error("Username is already taken!"));
             }
 
-        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+            if (userRepository.existsByEmail(registerRequest.getEmail())) {
                 logger.warn("Registration failed: Email {} already exists", registerRequest.getEmail());
                 return ResponseEntity.badRequest()
                         .body(MessageResponseDto.error("Email is already in use!"));
@@ -178,6 +184,56 @@ public class AuthControllerV1 {
         }
     }
 
+    @GetMapping("/oauth2-token")
+    public ResponseEntity<?> getOAuth2Tokens(HttpServletRequest request) {
+        Optional<String> jwtCookie = CookieUtils.getCookie(request, OAuth2AuthenticationSuccessHandler.JWT_COOKIE_NAME)
+                .map(Cookie::getValue);
+        Optional<String> refreshTokenCookie = CookieUtils.getCookie(request, OAuth2AuthenticationSuccessHandler.REFRESH_TOKEN_COOKIE_NAME)
+                .map(Cookie::getValue);
+
+        if (jwtCookie.isEmpty() || refreshTokenCookie.isEmpty()) {
+            logger.warn("Attempt to get OAuth2 tokens failed: Tokens not found in cookies.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(MessageResponseDto.error("Tokens not found or expired. Please log in again."));
+        }
+
+        String jwt = jwtCookie.get();
+        String refreshToken = refreshTokenCookie.get();
+
+        try {
+            if (!jwtUtils.validateJwtToken(jwt)) {
+                logger.warn("Attempt to get OAuth2 tokens failed: Invalid JWT token from cookie.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(MessageResponseDto.error("Invalid JWT token. Please log in again."));
+            }
+
+
+            String username = jwtUtils.getUserNameFromJwtToken(jwt);
+            User userDetails = userRepository.findByUsernameOrEmail(username, username)
+                    .orElseThrow(() -> new RuntimeException("User not found for token: " + username));
+
+            List<String> roles = userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .collect(Collectors.toList());
+
+            logger.info("Returning tokens for OAuth2 authenticated user: {}", userDetails.getEmail());
+
+            return ResponseEntity.ok(new JwtResponseDto(
+                    jwt,
+                    refreshToken,
+                    userDetails.getId(),
+                    userDetails.getUsername(),
+                    userDetails.getEmail(),
+                    roles));
+
+        } catch (Exception e) {
+            logger.error("Error retrieving or validating tokens from cookies", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(MessageResponseDto.error("Failed to retrieve tokens: " + e.getMessage()));
+        }
+    }
+
+
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequestDto request) {
         String requestRefreshToken = request.getRefreshToken();
@@ -228,7 +284,13 @@ public class AuthControllerV1 {
                     .body(MessageResponseDto.error("User is not authenticated"));
         }
 
-        User user = (User) authentication.getPrincipal();
-        return ResponseEntity.ok(user);
+        if (authentication.getPrincipal() instanceof User user) {
+            return ResponseEntity.ok(user);
+        } else if (authentication.getPrincipal() instanceof CustomOAuth2User oAuth2User) {
+
+            return ResponseEntity.ok(oAuth2User);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(MessageResponseDto.error("Unexpected principal type."));
+        }
     }
 }
