@@ -4,7 +4,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lii.buildmaster.projecttracker.util.CookieUtils;
+import lii.buildmaster.projecttracker.security.oauth2.CookieUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
@@ -33,7 +33,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
                 .map(Cookie::getValue)
                 .orElse(defaultFailureUrl);
 
-        // Safely encode error message
+
         String encodedErrorMessage = URLEncoder.encode(exception.getLocalizedMessage(), StandardCharsets.UTF_8);
 
         targetUrl = UriComponentsBuilder.fromUriString(targetUrl)
