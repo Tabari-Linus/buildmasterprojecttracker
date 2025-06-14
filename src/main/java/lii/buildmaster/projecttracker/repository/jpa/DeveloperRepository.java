@@ -12,6 +12,14 @@ import java.util.Optional;
 @Repository
 public interface DeveloperRepository extends JpaRepository<Developer, Long> {
 
+    @Query("SELECT d FROM Developer d WHERE d.id = :id")
+    Developer findByIdN(Long id);
+
+    @Query("SELECT d FROM Developer d JOIN d.user u WHERE u.username = :username")
+    Developer findDeveloperByUser(@Param("username") String username);
+
+    @Query("SELECT d FROM Developer d WHERE d.email = :email")
+    Developer findDeveloperByEmail(@Param("email") String email);
 
     Optional<Developer> findByEmail(String email);
 

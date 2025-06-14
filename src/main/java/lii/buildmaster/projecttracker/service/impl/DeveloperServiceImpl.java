@@ -65,6 +65,7 @@ public class DeveloperServiceImpl implements DeveloperService {
         newUser.setEmail(email);
         newUser.setUsername(email);
         String password = generateRandomPassword();
+        System.out.println(password);
         newUser.setPassword(passwordEncoder.encode(password));
         newUser.setProvider(AuthProvider.LOCAL);
 
