@@ -103,7 +103,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponseDto> handleAuthenticationException(AuthenticationException ex) {
-        logger.error("Authentication error: ", ex);
         return new ResponseEntity<>(
                 new ErrorResponseDto("Authentication failed: " + ex.getMessage(), "Unauthorized", HttpStatus.UNAUTHORIZED.value()),
                 HttpStatus.UNAUTHORIZED
