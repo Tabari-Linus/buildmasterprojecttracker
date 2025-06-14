@@ -67,14 +67,14 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/", "/oauth2-test.html", "/dashboard.html", "/oauth2-callback.html", "/login/**", "/oauth2/**","/api/v1/auth/**", "/api/v1/error").permitAll()
-                        .requestMatchers("/api/v1/test/**").permitAll()
                         .requestMatchers("/api/v1/oauth2/**").permitAll()
-                        .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-
-                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**","/h2-console/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/developers/**").hasAnyRole("ADMIN","MANAGER", "DEVELOPER")
+                        .requestMatchers("/api/v1/projects/**").authenticated()
+                        .requestMatchers("/api/v1/tasks/**").hasAnyRole("ADMIN","MANAGER", "DEVELOPER")
                         .anyRequest().authenticated()
                 )
                 .formLogin(Customizer.withDefaults())

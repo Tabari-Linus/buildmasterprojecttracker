@@ -50,10 +50,6 @@ public class CustomSecurityExpressions {
     }
 
     public boolean canModifyTask(Long taskId) {
-        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            return true;
-        }
-
         if (SecurityUtils.isDeveloper()) {
             return isAssignedToTask(taskId);
         }
