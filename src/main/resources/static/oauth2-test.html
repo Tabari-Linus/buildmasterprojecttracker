@@ -166,19 +166,17 @@
 <script>
     let currentToken = null;
 
-    // Check if coming back from OAuth2 login
     window.onload = function() {
         checkOAuth2Status();
     };
 
     function checkOAuth2Status() {
-        // Check if we're authenticated via OAuth2
         fetch('/api/v1/oauth2/user')
             .then(response => response.json())
             .then(data => {
                 if (data.email) {
                     showStatus('OAuth2 authentication successful! Converting to JWT...', 'success');
-                    // Get JWT token
+
                     getJwtToken();
                 }
             })
