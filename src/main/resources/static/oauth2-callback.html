@@ -66,62 +66,36 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // This script expects the server to respond with JSON containing tokens.
-        // It runs immediately when the page is loaded after OAuth2 redirect.
+
 
         const statusMessage = document.getElementById('statusMessage');
         const errorMessage = document.getElementById('errorMessage');
 
-        // Function to parse the initial JSON response directly from the document
+
         async function processServerResponse() {
             try {
-                // This assumes the server's response to the OAuth2 callback
-                // is a JSON payload directly rendered in this HTML document.
-                // This is unconventional for static HTML but required if
-                // the success handler directly writes JSON.
-                // A better approach for a static page would be for the server to redirect
-                // with tokens in fragment (for SPA) or session storage.
-                // However, given the requirement to hit this HTML, we'll try to parse the body.
-
-                // This part is tricky if the server just outputs JSON directly to the HTML.
-                // The browser will try to render it as HTML.
-                // A more standard setup would be for the server to return 200 OK with JSON
-                // to a fetch() call, or redirect with tokens in URL fragment/session.
-
-                // For demonstration, let's assume the server successfully wrote JSON,
-                // and we can somehow access it. In a real scenario, this page
-                // itself wouldn't be the direct target of the JSON.
-                // The previous setup with the backend returning 200 JSON to a hidden AJAX fetch
-                // was more standard.
-
-                // Let's revert the server-side success handler back to redirecting
-                // but instead of including tokens in URL params (which breaks static servers),
-                // we'll redirect to this page, and *then* make a fetch call for tokens.
-                // So, this page's script will behave like the dashboard's old script.
 
                 statusMessage.textContent = "Authenticating and fetching tokens...";
 
-                // Make an AJAX call to get tokens, as the SecurityContextHolder should now be populated.
+
                 const response = await fetch('/api/v1/auth/oauth2-token');
                 if (!response.ok) {
-                    const errorData = await response.json(); // Attempt to parse JSON error
+                    const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to fetch tokens after OAuth2.');
                 }
                 const data = await response.json();
 
                 if (data.token && data.refreshToken) {
-                    // Store tokens securely (e.g., in localStorage or sessionStorage for client-side JS)
-                    // Note: localStorage/sessionStorage are not as secure as HTTP-only cookies
-                    // but are accessible to client-side JS. Choose based on your security needs.
+
                     localStorage.setItem('accessToken', data.token);
                     localStorage.setItem('refreshToken', data.refreshToken);
                     localStorage.setItem('userId', data.id);
                     localStorage.setItem('username', data.username);
                     localStorage.setItem('email', data.email);
-                    localStorage.setItem('roles', JSON.stringify(data.roles)); // Store roles as stringified JSON
+                    localStorage.setItem('roles', JSON.stringify(data.roles));
 
                     statusMessage.textContent = "Authentication successful! Redirecting to dashboard...";
-                    window.location.href = '/dashboard.html'; // Redirect to the dashboard
+                    window.location.href = '/dashboard.html';
                 } else {
                     throw new Error("Tokens not received in response.");
                 }
@@ -131,9 +105,8 @@
                 statusMessage.style.display = 'none';
                 errorMessage.textContent = 'Login failed: ' + error.message;
                 errorMessage.style.display = 'block';
-                // Redirect to failure URL after a delay or show error message permanently
                 setTimeout(() => {
-                    window.location.href = '/login?error=true&message=' + encodeURIComponent(error.message); // Your failure URL
+                    window.location.href = '/login?error=true&message=' + encodeURIComponent(error.message);
                 }, 3000);
             }
         }
