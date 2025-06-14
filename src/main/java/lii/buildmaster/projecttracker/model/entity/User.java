@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lii.buildmaster.projecttracker.model.enums.AuthProvider;
 import lombok.*;
@@ -51,10 +52,10 @@ public class User extends AuditableEntity implements UserDetails {
     @NotBlank
     @Size(max = 120)
     @JsonIgnore
-//    @Pattern(
-//            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-//    message = "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"
-//            )
+    @Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+    message = "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"
+            )
     private String password;
 
     @Size(max = 50)
@@ -122,5 +123,4 @@ public class User extends AuditableEntity implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
-
 }
