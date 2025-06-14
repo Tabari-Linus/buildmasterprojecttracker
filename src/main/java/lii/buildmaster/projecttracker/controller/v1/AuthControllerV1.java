@@ -288,26 +288,8 @@ public class AuthControllerV1 {
 
 
             Developer developer = developerRepository.findDeveloperByEmail(user.getEmail());
-            DeveloperResponseDto developerDto = null;
+            AuthenticatedUserResponseDto userDto = getAuthenticatedUserResponseDto(user, developer);
 
-            if (developer != null) {
-                developerDto = new DeveloperResponseDto(
-                        developer.getId(),
-                        developer.getName(),
-                        developer.getEmail(),
-                        developer.getSkills()
-                );
-            } else {
-                logger.warn("User {} has no associated developer entity", user.getUsername());
-
-            }
-
-            AuthenticatedUserResponseDto userDto = new AuthenticatedUserResponseDto(
-                    user.getId(),
-                    user.getUsername(),
-                    user.getEmail(),
-                    developerDto
-            );
 
             return ResponseEntity.ok(userDto);
         }
@@ -317,6 +299,31 @@ public class AuthControllerV1 {
         }
 
         return ResponseEntity.badRequest().body(MessageResponseDto.error("Unexpected principal type."));
+    }
+
+    private static AuthenticatedUserResponseDto getAuthenticatedUserResponseDto(User user, Developer developer) {
+        AuthenticatedUserResponseDto userDto = null;
+        if (developer != null) {
+            userDto = new AuthenticatedUserResponseDto(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    new DeveloperResponseDto(
+                            developer.getId(),
+                            developer.getName(),
+                            developer.getEmail(),
+                            developer.getSkills()
+                    )
+            );
+        } else {
+            userDto = new AuthenticatedUserResponseDto(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    null
+            );
+        }
+        return userDto;
     }
 
 }
