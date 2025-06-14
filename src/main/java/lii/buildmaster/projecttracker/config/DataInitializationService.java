@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.config;
 
+import lii.buildmaster.projecttracker.model.dto.request.TaskRequestDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Role;
 import lii.buildmaster.projecttracker.model.entity.User;
@@ -81,31 +82,24 @@ public class DataInitializationService {
                 "Java, Spring Boot, Microservices, MySQL, Jenkins"
         );
 
-        taskService.createTask(
-                "Setup Project Structure",
-                "Initialize the project with proper package structure and dependencies",
-                TaskStatus.DONE,
-                LocalDateTime.now().plusDays(2),
-                project1.getId(),
-                dev1.getId()
-        );
+        TaskRequestDto taskRequestDto = TaskRequestDto.builder()
+                .title("User Authentication Module")
+                .description("Implement user authentication with JWT and OAuth2")
+                .status(TaskStatus.TODO)
+                .dueDate(LocalDateTime.now().plusDays(10))
+                .projectId(project1.getId())
+                .developerId(dev1.getId())
+                .build();
+        taskService.createTask(taskRequestDto);
 
-        taskService.createTask(
-                "Implement User Authentication",
-                "Create JWT-based authentication system with role management",
-                TaskStatus.IN_PROGRESS,
-                LocalDateTime.now().plusDays(10),
-                project1.getId(),
-                dev1.getId()
-        );
-
-        taskService.createTask(
-                "Shopping Cart Implementation",
-                "Implement shopping cart functionality with session management",
-                TaskStatus.TODO,
-                LocalDateTime.now().plusDays(20),
-                project1.getId()
-        );
+        taskRequestDto = TaskRequestDto.builder()
+                .title("Payment Gateway Integration")
+                .description("Integrate payment gateway for secure transactions")
+                .status(TaskStatus.IN_PROGRESS)
+                .dueDate(LocalDateTime.now().plusDays(15))
+                .projectId(project1.getId())
+                .build();
+        taskService.createTask(taskRequestDto);
 
         if (!userRepository.existsByUsername("admin")) {
             Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
@@ -126,7 +120,7 @@ public class DataInitializationService {
         }
 
         createSampleUser("manager1", "manager@projecttracker.com", "Manager", "One", RoleName.ROLE_MANAGER);
-        createSampleUser("developercoder", "developercode@gmail.com", "Developer", "coder", RoleName.ROLE_DEVELOPER);
+        createSampleUser("developercoder", "developercoder@gmail.com", "Developer", "coder", RoleName.ROLE_DEVELOPER);
     }
 
     private void createSampleUser(String username, String email, String firstName, String lastName, RoleName roleName) {
