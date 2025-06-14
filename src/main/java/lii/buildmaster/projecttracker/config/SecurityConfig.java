@@ -1,7 +1,7 @@
 package lii.buildmaster.projecttracker.config;
 
 import lii.buildmaster.projecttracker.security.jwt.JwtAuthenticationEntryPoint;
-import lii.buildmaster.projecttracker.security.jwt.JwtAuthenticationFilter; // Import this
+import lii.buildmaster.projecttracker.security.jwt.JwtAuthenticationFilter;
 import lii.buildmaster.projecttracker.security.oauth2.CustomOAuth2UserService;
 import lii.buildmaster.projecttracker.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
 import lii.buildmaster.projecttracker.security.oauth2.OAuth2AuthenticationFailureHandler;
@@ -16,12 +16,13 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter; // Import this
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -65,7 +66,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/", "/oauth2-test.html", "/login/**", "/oauth2/**","/api/v1/auth/**", "/dashboard", "/api/v1/error").permitAll()
+                        .requestMatchers("/", "/oauth2-test.html", "/dashboard.html", "/oauth2-callback.html", "/login/**", "/oauth2/**","/api/v1/auth/**", "/api/v1/error").permitAll()
                         .requestMatchers("/api/v1/test/**").permitAll()
                         .requestMatchers("/api/v1/oauth2/**").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
@@ -83,7 +84,7 @@ public class SecurityConfig {
                                 .baseUri("/oauth2/authorize")
                                 .authorizationRequestRepository(httpCookieOAuth2AuthorizationRequestRepository)
                         )
-                        .defaultSuccessUrl("/dashboard", true)
+                        .defaultSuccessUrl("/oauth2-callback.html", true)
                         .redirectionEndpoint(redir -> redir
                                 .baseUri("/login/oauth2/code/*")
                         )
@@ -101,5 +102,10 @@ public class SecurityConfig {
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers("/api/v1/auth/oauth2-token");
     }
 }
