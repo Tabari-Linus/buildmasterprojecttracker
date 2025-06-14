@@ -4,6 +4,11 @@ import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.exception.DeveloperNotFoundException;
 import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
 import lii.buildmaster.projecttracker.exception.TaskNotFoundException;
+import lii.buildmaster.projecttracker.mapper.ProjectMapper;
+import lii.buildmaster.projecttracker.mapper.TaskMapper;
+import lii.buildmaster.projecttracker.model.dto.request.TaskRequestDto;
+import lii.buildmaster.projecttracker.model.dto.response.TaskResponseDto;
+import lii.buildmaster.projecttracker.model.dto.summary.DeveloperSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
@@ -14,10 +19,13 @@ import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
 import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
 import lii.buildmaster.projecttracker.repository.jpa.TaskRepository;
 import lii.buildmaster.projecttracker.service.TaskService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,19 +37,16 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final DeveloperRepository developerRepository;
+    private final TaskMapper taskMapper;
+    private final ProjectMapper projectMapper;
 
-    public TaskServiceImpl(TaskRepository taskRepository,
-                           ProjectRepository projectRepository,
-                           DeveloperRepository developerRepository) {
-        this.taskRepository = taskRepository;
-        this.projectRepository = projectRepository;
-        this.developerRepository = developerRepository;
-    }
+
 
     @Override
     @Auditable(action = ActionType.CREATE, entityType = EntityType.TASK)
@@ -51,39 +56,77 @@ public class TaskServiceImpl implements TaskService {
             @CacheEvict(value = "projects", allEntries = true),
             @CacheEvict(value = "developers", allEntries = true)
     })
-    public Task createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId, Long developerId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(projectId));
-
+    public TaskResponseDto createTask(TaskRequestDto taskRequestDto) {
+        Project project = projectRepository.findById(taskRequestDto.getProjectId())
+                .orElseThrow(() -> new ProjectNotFoundException(taskRequestDto.getProjectId()));
         Developer developer = null;
-        if (developerId != null) {
-            developer = developerRepository.findById(developerId)
-                    .orElseThrow(() -> new DeveloperNotFoundException(developerId));
+        if (taskRequestDto.getDeveloperId() != null) {
+            developer = developerRepository.findById(taskRequestDto.getDeveloperId())
+                    .orElseThrow(() -> new DeveloperNotFoundException(taskRequestDto.getDeveloperId()));
         }
 
-        Task task = new Task(title, description, status, dueDate, project, developer);
-       return taskRepository.save(task);
+        Task task = new Task(taskRequestDto.getTitle(), taskRequestDto.getDescription(), taskRequestDto.getStatus(), taskRequestDto.getDueDate(), project, developer);
+        taskRepository.save(task);
+
+        TaskResponseDto responseDto = new TaskResponseDto();
+        responseDto.setId(task.getId());
+        responseDto.setTitle(task.getTitle());
+        responseDto.setDescription(task.getDescription());
+        responseDto.setStatus(task.getStatus());
+        responseDto.setDueDate(task.getDueDate());
+        return getTaskResponseDto(task, responseDto);
 
     }
 
+    private TaskResponseDto getTaskResponseDto(Task task, TaskResponseDto responseDto) {
+        responseDto.setProject(projectMapper.toSummaryDto(task.getProject()));
+
+        if (task.getDeveloper() != null) {
+            DeveloperSummaryDto devSummary = new DeveloperSummaryDto();
+            devSummary.setId(task.getDeveloper().getId());
+            devSummary.setName(task.getDeveloper().getName());
+            responseDto.setDeveloper(devSummary);
+        } else {
+            responseDto.setDeveloper(null);
+        }
+
+        return responseDto;
+    }
+
+
+
     @Override
-    public void createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId) {
-        createTask(title, description, status, dueDate, projectId, null);
+    public Page <TaskResponseDto> getAllTasks(Pageable pageable) {
+        return (Page<TaskResponseDto>) taskRepository.findAll(pageable).stream()
+                .map(task -> {
+                    TaskResponseDto responseDto = taskMapper.toResponseDto(task);
+                    return getTaskResponseDto(task, responseDto);
+                })
+                .collect(Collectors.toList());
+
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "'all'")
-    public List<Task> getAllTasks() {
+    public List<Task> getAllTask() {
         return taskRepository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "#id")
-    public Task getTaskById(Long id) {
-        return taskRepository.findById(id)
-                .orElseThrow(() -> new TaskNotFoundException(id));
+    public TaskResponseDto getTaskById(Long id) {
+        if(!taskRepository.findById(id).isEmpty()){
+            return taskRepository.findById(id)
+                .map(task -> {
+                    TaskResponseDto responseDto = taskMapper.toResponseDto(task);
+                            return getTaskResponseDto(task, responseDto);
+                        }
+                ).orElseThrow(() -> new TaskNotFoundException(id));
+        }else{
+            throw new TaskNotFoundException(id);
+        }
     }
 
     @Override
@@ -93,7 +136,7 @@ public class TaskServiceImpl implements TaskService {
             @CacheEvict(value = "tasks", key = "'all'"),
             @CacheEvict(value = "taskStats", allEntries = true)
     })
-    public Task updateTask(Long id, String title, String description, TaskStatus status, LocalDateTime dueDate) {
+    public TaskResponseDto updateTask(Long id, String title, String description, TaskStatus status, LocalDateTime dueDate) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
 
@@ -102,7 +145,14 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(status);
         task.setDueDate(dueDate);
 
-        return taskRepository.save(task);
+        Task created = taskRepository.save(task);
+        TaskResponseDto responseDto = new TaskResponseDto();
+        responseDto.setId(created.getId());
+        responseDto.setTitle(created.getTitle());
+        responseDto.setDescription(created.getDescription());
+        responseDto.setStatus(created.getStatus());
+        responseDto.setDueDate(created.getDueDate());
+        return responseDto;
 
     }
 

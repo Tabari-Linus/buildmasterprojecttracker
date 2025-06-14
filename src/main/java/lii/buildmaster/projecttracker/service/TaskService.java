@@ -1,25 +1,30 @@
 package lii.buildmaster.projecttracker.service;
 
+import lii.buildmaster.projecttracker.model.dto.request.TaskRequestDto;
+import lii.buildmaster.projecttracker.model.dto.response.TaskResponseDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
 import lii.buildmaster.projecttracker.model.enums.TaskStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
 
 public interface TaskService {
 
-    Task createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId, Long developerId);
+    TaskResponseDto createTask(TaskRequestDto taskRequest);
 
-    void createTask(String title, String description, TaskStatus status, LocalDateTime dueDate, Long projectId);
 
-    List<Task> getAllTasks();
+    Page<TaskResponseDto> getAllTasks(Pageable pageable);
 
-    Task getTaskById(Long id);
+    List<Task> getAllTask();
 
-    Task updateTask(Long id, String title, String description, TaskStatus status, LocalDateTime dueDate);
+    TaskResponseDto getTaskById(Long id);
+
+    TaskResponseDto updateTask(Long id, String title, String description, TaskStatus status, LocalDateTime dueDate);
 
     void deleteTask(Long id);
 
