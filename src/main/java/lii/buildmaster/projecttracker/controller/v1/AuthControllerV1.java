@@ -5,9 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lii.buildmaster.projecttracker.model.dto.request.LoginRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.RegisterRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.TokenRefreshRequestDto;
-import lii.buildmaster.projecttracker.model.dto.response.JwtResponseDto;
-import lii.buildmaster.projecttracker.model.dto.response.MessageResponseDto;
-import lii.buildmaster.projecttracker.model.dto.response.TokenRefreshResponseDto;
+import lii.buildmaster.projecttracker.model.dto.response.*;
 import lii.buildmaster.projecttracker.model.entity.Role;
 import lii.buildmaster.projecttracker.model.entity.User;
 import lii.buildmaster.projecttracker.model.entity.Developer;
@@ -22,6 +20,7 @@ import lii.buildmaster.projecttracker.security.oauth2.CookieUtils;
 import lii.buildmaster.projecttracker.util.jwt.JwtUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.mapstruct.control.MappingControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -285,12 +284,39 @@ public class AuthControllerV1 {
         }
 
         if (authentication.getPrincipal() instanceof User user) {
-            return ResponseEntity.ok(user);
-        } else if (authentication.getPrincipal() instanceof CustomOAuth2User oAuth2User) {
 
-            return ResponseEntity.ok(oAuth2User);
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(MessageResponseDto.error("Unexpected principal type."));
+
+
+            Developer developer = developerRepository.findDeveloperByEmail(user.getEmail());
+            DeveloperResponseDto developerDto = null;
+
+            if (developer != null) {
+                developerDto = new DeveloperResponseDto(
+                        developer.getId(),
+                        developer.getName(),
+                        developer.getEmail(),
+                        developer.getSkills()
+                );
+            } else {
+                logger.warn("User {} has no associated developer entity", user.getUsername());
+
+            }
+
+            AuthenticatedUserResponseDto userDto = new AuthenticatedUserResponseDto(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    developerDto
+            );
+
+            return ResponseEntity.ok(userDto);
         }
+
+        if (authentication.getPrincipal() instanceof CustomOAuth2User oAuth2User) {
+            return ResponseEntity.ok(oAuth2User);
+        }
+
+        return ResponseEntity.badRequest().body(MessageResponseDto.error("Unexpected principal type."));
     }
+
 }
