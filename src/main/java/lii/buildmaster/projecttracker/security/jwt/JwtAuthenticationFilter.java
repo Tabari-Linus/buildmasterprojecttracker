@@ -16,8 +16,11 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper; // Import UrlPathHelper
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -28,9 +31,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final CustomUserDetailsService userDetailsService;
 
+    private static final List<String> EXCLUDED_PATHS = Arrays.asList(
+            "/api/v1/auth/oauth2-token"
+    );
+
+    private final UrlPathHelper urlPathHelper = new UrlPathHelper();
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
+
+        String requestUri = urlPathHelper.getOriginatingRequestUri(request);
+
+
+        if (EXCLUDED_PATHS.contains(requestUri)) {
+            logger.debug("Bypassing JwtAuthenticationFilter for excluded path: {}", requestUri);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             String jwt = parseJwt(request);
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
@@ -46,10 +66,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                logger.debug("User {} authenticated successfully via JWT", username);
+                logger.debug("User {} authenticated successfully via JWT for path: {}", username, requestUri);
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e.getMessage());
+            logger.error("Cannot set user authentication for path {}: {}", requestUri, e.getMessage());
         }
 
         filterChain.doFilter(request, response);
