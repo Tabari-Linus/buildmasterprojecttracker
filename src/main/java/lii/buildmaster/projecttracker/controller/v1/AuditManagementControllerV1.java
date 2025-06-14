@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lii.buildmaster.projecttracker.util.AuditCleanupUtil;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/audit-management")
 @Tag(name = "Audit Management", description = "Administrative operations for audit log management")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
 public class AuditManagementControllerV1 {
 
     private final AuditCleanupUtil auditCleanupUtil;

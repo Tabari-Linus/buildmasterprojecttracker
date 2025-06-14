@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -24,8 +25,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/audit-logs")
-@CrossOrigin(origins = "*")
 @Tag(name = "Audit Logs", description = "AUdit Logger for tacking user activities and changes to entities")
+@PreAuthorize("hasRole('ROLE_ADMIN') ")
 public class AuditLogControllerV1 {
 
     private final AuditLogService auditLogService;
