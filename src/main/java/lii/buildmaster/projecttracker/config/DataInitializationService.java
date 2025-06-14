@@ -126,8 +126,7 @@ public class DataInitializationService {
         }
 
         createSampleUser("manager1", "manager@projecttracker.com", "Manager", "One", RoleName.ROLE_MANAGER);
-        createSampleUser("dev1", "dev1@projecttracker.com", "Developer", "One", RoleName.ROLE_DEVELOPER);
-        createSampleUser("dev2", "dev2@projecttracker.com", "Developer", "Two", RoleName.ROLE_DEVELOPER);
+        createSampleUser("developercoder", "developercode@gmail.com", "Developer", "coder", RoleName.ROLE_DEVELOPER);
     }
 
     private void createSampleUser(String username, String email, String firstName, String lastName, RoleName roleName) {
