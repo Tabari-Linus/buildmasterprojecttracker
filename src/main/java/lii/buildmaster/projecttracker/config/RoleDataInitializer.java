@@ -18,7 +18,7 @@ public class RoleDataInitializer {
     CommandLineRunner initDatabase() {
         return args -> {
             initializationService.initialize();
-            log.info("✅ Database initialization complete.");
+            log.info("Ready");
         };
     }
 }
