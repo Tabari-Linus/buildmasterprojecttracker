@@ -97,7 +97,7 @@ class AuthControllerV1Test {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         JwtResponseDto jwtResponse = (JwtResponseDto) response.getBody();
         assertEquals("jwt-token", jwtResponse.getToken());
-        assertEquals("test@example.com", jwtResponse.getEmail());
+        assertEquals("developer@gmail.com", jwtResponse.getEmail());
     }
 
     @Test
@@ -278,7 +278,7 @@ class AuthControllerV1Test {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(testUser);
-        when(developerRepository.findDeveloperByEmail("test@example.com")).thenReturn(testDeveloper);
+        when(developerRepository.findDeveloperByEmail("developer@gmail.com")).thenReturn(testDeveloper);
 
 
         var response = authController.getMyDetails();
