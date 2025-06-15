@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,12 @@ public class CustomOAuth2User implements OAuth2User, UserDetails {
         this.username = username;
         this.password = password;
         this.authorities = authorities;
+    }
+
+    public CustomOAuth2User(List<SimpleGrantedAuthority> roleUser, Map<String, Object> attributes, String name) {
+        this.authorities = roleUser;
+        this.attributes = attributes;
+        this.username = name;
     }
 
     public static CustomOAuth2User create(User user) {
