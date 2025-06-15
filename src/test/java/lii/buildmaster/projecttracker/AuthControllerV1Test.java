@@ -97,7 +97,7 @@ class AuthControllerV1Test {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         JwtResponseDto jwtResponse = (JwtResponseDto) response.getBody();
         assertEquals("jwt-token", jwtResponse.getToken());
-        assertEquals("test@example.com", jwtResponse.getEmail());
+        assertEquals("developer@gmail.com", jwtResponse.getEmail());
     }
 
     @Test
