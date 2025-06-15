@@ -278,7 +278,7 @@ class AuthControllerV1Test {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(testUser);
-        when(developerRepository.findDeveloperByEmail("test@example.com")).thenReturn(testDeveloper);
+        when(developerRepository.findDeveloperByEmail("developer@gmail.com")).thenReturn(testDeveloper);
 
 
         var response = authController.getMyDetails();
