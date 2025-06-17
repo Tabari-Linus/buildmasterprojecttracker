@@ -52,10 +52,6 @@ public class User extends AuditableEntity implements UserDetails {
     @NotBlank
     @Size(max = 120)
     @JsonIgnore
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-    message = "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"
-            )
     private String password;
 
     @Size(max = 50)
@@ -122,5 +118,9 @@ public class User extends AuditableEntity implements UserDetails {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public Object getFullName() {
+        return getFirstName() + " " + getLastName();
     }
 }
