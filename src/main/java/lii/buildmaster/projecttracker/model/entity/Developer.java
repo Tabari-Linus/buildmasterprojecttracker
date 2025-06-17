@@ -60,6 +60,10 @@ public class Developer extends AuditableEntity{
         this.skills = skills;
     }
 
+    public Developer(Object fullName, @NotBlank @Size(max = 100) @Email String email, User savedUser, String s) {
+        super();
+    }
+
     public String getUsername() {
         return user != null ? user.getUsername() : null;
     }
