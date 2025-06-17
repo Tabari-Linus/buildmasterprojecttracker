@@ -33,4 +33,9 @@ public class Role {
     @Builder.Default
     @ToString.Exclude
     private Set<User> users = new HashSet<>();
+
+    public <E> Role(long l, RoleName roleName, HashSet<E> es) {
+        this.id = l;
+        this.name = roleName;
+    }
 }
