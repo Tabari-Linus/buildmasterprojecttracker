@@ -32,4 +32,6 @@ public class RegisterRequestDto {
 
 
     private String role;
+
+    private String skills;
 }
