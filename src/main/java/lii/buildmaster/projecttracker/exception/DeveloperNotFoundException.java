@@ -11,4 +11,9 @@ public class DeveloperNotFoundException extends RuntimeException{
         super("Develops with ID " + developerId + " not found.");
         this.developerId = developerId;
     }
+
+    public DeveloperNotFoundException(String s) {
+        super(s);
+        this.developerId = null;
+    }
 }
