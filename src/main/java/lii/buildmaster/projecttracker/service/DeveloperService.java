@@ -1,21 +1,26 @@
 package lii.buildmaster.projecttracker.service;
 
+import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
+import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
+import lii.buildmaster.projecttracker.model.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface DeveloperService {
 
-    Developer createDeveloper(String name, String email, String skills);
+    void createDeveloper(DeveloperRequestDto dto, User user);
 
-    List<Developer> getAllDevelopers();
 
-    Developer getDeveloperById(Long id);
+    Page<Developer> getAllDevelopers(Pageable pageable);
 
-    Optional<Developer> getDeveloperByEmail(String email);
+    DeveloperResponseDto getDeveloperById(Long id);
 
-    Developer updateDeveloper(Long id, String name, String email, String skills);
+    Developer getDeveloperByEmail(String email);
+
+    DeveloperResponseDto updateDeveloper(Long id, DeveloperRequestDto dto);
 
     void deleteDeveloper(Long id);
 

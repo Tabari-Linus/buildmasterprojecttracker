@@ -23,4 +23,7 @@ public class   DeveloperRequestDto {
 
     @Size(max = 500, message = "Skills must not exceed 500 characters")
     private String skills;
+
+    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
+    private String password;
 }

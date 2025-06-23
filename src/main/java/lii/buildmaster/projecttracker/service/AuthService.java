@@ -2,6 +2,8 @@ package lii.buildmaster.projecttracker.service;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
+import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.LoginRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.RegisterRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.AuthenticatedUserResponseDto;
@@ -39,8 +41,9 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final DeveloperRepository developerRepository;
+    private final DeveloperService developerService;
     private final PasswordEncoder passwordEncoder;
+    private final DeveloperMapper developerMapper;
 
     public JwtResponseDto authenticate(LoginRequestDto loginRequest) {
         Authentication authentication = authManager.authenticate(
@@ -72,13 +75,21 @@ public class AuthService {
 
         User user = buildUser(request);
         Role role = resolveRole(request.getRole());
-
         user.setRoles(Set.of(role));
         User savedUser = userRepository.save(user);
 
         if (role.getName() == RoleName.ROLE_DEVELOPER) {
-            Developer dev = new Developer(savedUser.getFullName(), savedUser.getEmail(), savedUser, "");
-            developerRepository.save(dev);
+            if (request.getSkills() == null || request.getSkills().isEmpty()) {
+                throw new IllegalArgumentException("Skills are required for developers!");
+            }
+
+            DeveloperRequestDto developerDto = new DeveloperRequestDto(
+                    request.getFirstName() + " " + request.getLastName(),
+                    request.getEmail(),
+                    request.getSkills(),
+                    request.getPassword()
+            );
+            developerService.createDeveloper(developerDto, savedUser);
         }
 
         return MessageResponseDto.success("User registered successfully!");
@@ -119,15 +130,35 @@ public class AuthService {
             throw new RuntimeException("User not authenticated");
         }
 
-        if (auth.getPrincipal() instanceof User user) {
-            Developer dev = developerRepository.findDeveloperByEmail(user.getEmail());
-            DeveloperResponseDto devDto = (dev != null) ? new DeveloperResponseDto(
-                    dev.getId(), dev.getName(), dev.getEmail(), dev.getSkills()) : null;
+        Object principal = auth.getPrincipal();
+        if (principal instanceof User user) {
+            DeveloperResponseDto devDto = new DeveloperResponseDto();
 
-            return new AuthenticatedUserResponseDto(user.getId(), user.getUsername(), user.getEmail(), devDto);
+            boolean isDeveloper = user.getRoles().stream()
+                    .anyMatch(role -> role.getName() == RoleName.ROLE_DEVELOPER);
+
+            if (isDeveloper) {
+                Developer dev = developerService.getDeveloperByEmail(user.getEmail());
+                System.out.println("Developer Entity: " + dev);
+                if (dev == null) {
+                    throw new RuntimeException("Developer not found for user: " + user.getEmail());
+                }
+
+                devDto = developerMapper.toResponseDto(dev);
+            }
+
+
+
+            System.out.println("Mapped DTO: " + devDto);
+
+
+            return new AuthenticatedUserResponseDto(
+                    user.getId(), user.getUsername(), user.getEmail(), devDto
+            );
         }
         throw new RuntimeException("Unexpected user principal type");
     }
+
 
     public JwtResponseDto getOAuth2TokensFromCookies(HttpServletRequest request) {
         String jwt = CookieUtils.getCookie(request, OAuth2AuthenticationSuccessHandler.JWT_COOKIE_NAME)

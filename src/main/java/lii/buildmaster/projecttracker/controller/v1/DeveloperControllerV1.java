@@ -1,15 +1,14 @@
 package lii.buildmaster.projecttracker.controller.v1;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
 import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
 import lii.buildmaster.projecttracker.model.dto.summary.DeveloperSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.service.DeveloperService;
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -18,12 +17,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/developers")
-@Tag(name = "Developers", description = "Developer management operations including CRUD, search by skills, and task statistics")
+@Tag(name = "Developers", description = "Developer management operations")
 public class DeveloperControllerV1 {
 
     private final DeveloperService developerService;
@@ -38,139 +35,72 @@ public class DeveloperControllerV1 {
     @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<Page<DeveloperSummaryDto>> getAllDevelopers(
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
-
-        List<Developer> developers = developerService.getAllDevelopers();
-        List<DeveloperSummaryDto> developerDtos = developers.stream()
-                .map(developerMapper::toSummaryDto)
-                .collect(Collectors.toList());
-
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), developerDtos.size());
-        List<DeveloperSummaryDto> pageContent = developerDtos.subList(start, end);
-
-        Page<DeveloperSummaryDto> page = new PageImpl<>(pageContent, pageable, developerDtos.size());
-        return ResponseEntity.ok(page);
+        return ResponseEntity.ok(developerService.getAllDevelopers(pageable)
+                .map(developerMapper::toSummaryDto));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("@security.canViewAllDevelopers() or @security.canModifyDeveloper(#id)")
     public ResponseEntity<DeveloperResponseDto> getDeveloperById(@PathVariable Long id) {
-        Developer developer = developerService.getDeveloperById(id);
+        return ResponseEntity.ok(developerService.getDeveloperById(id));
+    }
+
+    @GetMapping("/email")
+    @PreAuthorize("@security.canViewAllDevelopers()")
+    public ResponseEntity<DeveloperResponseDto> getDeveloperByEmail(@RequestParam String email) {
+        Developer developer = developerService.getDeveloperByEmail(email);
         return ResponseEntity.ok(developerMapper.toResponseDto(developer));
     }
 
 
-    @GetMapping("/email")
-    @PreAuthorize("@security.canViewAllDevelopers() or @security.canModifyDeveloper(#id)")
-    public ResponseEntity<DeveloperResponseDto> getDeveloperByEmail(@RequestParam String email) {
-        Optional<Developer> developer = developerService.getDeveloperByEmail(email);
-
-        if (developer.isPresent()) {
-            DeveloperResponseDto responseDto = developerMapper.toResponseDto(developer.get());
-            return ResponseEntity.ok(responseDto);
-        }
-
-        return ResponseEntity.notFound().build();
-    }
-
-    @PostMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<DeveloperResponseDto> createDeveloper(@Valid @RequestBody DeveloperRequestDto requestDto) {
-        try {
-            Developer developer = developerService.createDeveloper(
-                    requestDto.getName(),
-                    requestDto.getEmail(),
-                    requestDto.getSkills()
-            );
-
-            DeveloperResponseDto responseDto = developerMapper.toResponseDto(developer);
-            return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
-    }
-
     @PutMapping("/{id}")
     @PreAuthorize("@security.canModifyDeveloper(#id)")
-    public ResponseEntity<DeveloperResponseDto> updateDeveloper(
-            @PathVariable Long id,
-            @Valid @RequestBody DeveloperRequestDto requestDto) {
-
-        try {
-            Developer updatedDeveloper = developerService.updateDeveloper(
-                    id,
-                    requestDto.getName(),
-                    requestDto.getEmail(),
-                    requestDto.getSkills()
-            );
-
-            DeveloperResponseDto responseDto = developerMapper.toResponseDto(updatedDeveloper);
-            return ResponseEntity.ok(responseDto);
-
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("not found")) {
-                return ResponseEntity.notFound().build();
-            } else {
-                return ResponseEntity.status(HttpStatus.CONFLICT).build();
-            }
-        }
+    public ResponseEntity<DeveloperResponseDto> updateDeveloper(@PathVariable Long id,
+                                                                @Valid @RequestBody DeveloperRequestDto dto) {
+        DeveloperResponseDto updated = developerService.updateDeveloper(id, dto);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteDeveloper(@PathVariable Long id) {
-        try {
-            developerService.deleteDeveloper(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        developerService.deleteDeveloper(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")
     @PreAuthorize("@security.canViewAllDevelopers()")
-    public ResponseEntity<List<DeveloperSummaryDto>> searchDevelopers(@RequestParam String name) {
-        List<Developer> developers = developerService.searchDevelopersByName(name);
-        List<DeveloperSummaryDto> developerDtos = developers.stream()
+    public ResponseEntity<List<DeveloperSummaryDto>> searchByName(@RequestParam String name) {
+        return ResponseEntity.ok(developerService.searchDevelopersByName(name).stream()
                 .map(developerMapper::toSummaryDto)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(developerDtos);
+                .toList());
     }
 
     @GetMapping("/skill")
     @PreAuthorize("@security.canViewAllDevelopers()")
-    public ResponseEntity<List<DeveloperSummaryDto>> findDevelopersBySkill(@RequestParam String skill) {
-        List<Developer> developers = developerService.findDevelopersBySkill(skill);
-        List<DeveloperSummaryDto> developerDtos = developers.stream()
+    public ResponseEntity<List<DeveloperSummaryDto>> searchBySkill(@RequestParam String skill) {
+        return ResponseEntity.ok(developerService.findDevelopersBySkill(skill).stream()
                 .map(developerMapper::toSummaryDto)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(developerDtos);
+                .toList());
     }
 
     @GetMapping("/email-check")
     @PreAuthorize("@security.canViewAllDevelopers()")
-    public ResponseEntity<java.util.Map<String, Object>> checkEmailAvailability(@RequestParam String email) {
+    public ResponseEntity<?> checkEmailAvailability(@RequestParam String email) {
         boolean isTaken = developerService.isEmailTaken(email);
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
-        response.put("email", email);
-        response.put("available", !isTaken);
-        response.put("message", isTaken ? "Email is already taken" : "Email is available");
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                java.util.Map.of(
+                        "email", email,
+                        "available", !isTaken,
+                        "message", isTaken ? "Email is already taken" : "Email is available"
+                )
+        );
     }
 
     @GetMapping("/stats/total-count")
     @PreAuthorize("@security.canViewAllDevelopers()")
-    public ResponseEntity<java.util.Map<String, Long>> getTotalDeveloperCount() {
+    public ResponseEntity<?> getTotalDeveloperCount() {
         long count = developerService.getTotalDeveloperCount();
-        java.util.Map<String, Long> response = new java.util.HashMap<>();
-        response.put("totalCount", count);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(java.util.Map.of("totalCount", count));
     }
-
-
 }

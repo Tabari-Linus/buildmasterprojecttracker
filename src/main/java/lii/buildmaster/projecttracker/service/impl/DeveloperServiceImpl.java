@@ -3,24 +3,19 @@ package lii.buildmaster.projecttracker.service.impl;
 import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.exception.DeveloperNotFoundException;
 import lii.buildmaster.projecttracker.exception.EmailAlreadyExistsException;
-import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
+import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
+import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
+import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Role;
 import lii.buildmaster.projecttracker.model.entity.User;
-import lii.buildmaster.projecttracker.model.enums.ActionType;
-import lii.buildmaster.projecttracker.model.enums.AuthProvider;
-import lii.buildmaster.projecttracker.model.enums.EntityType;
-import lii.buildmaster.projecttracker.model.enums.RoleName;
-import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
-import lii.buildmaster.projecttracker.repository.jpa.RoleRepository;
-import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
-import lii.buildmaster.projecttracker.service.AuditLogService;
+import lii.buildmaster.projecttracker.model.enums.*;
+import lii.buildmaster.projecttracker.repository.jpa.*;
 import lii.buildmaster.projecttracker.service.DeveloperService;
-import lii.buildmaster.projecttracker.util.AuditUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
+import org.springframework.cache.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,20 +29,10 @@ import java.util.*;
 public class DeveloperServiceImpl implements DeveloperService {
 
     private final DeveloperRepository developerRepository;
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final DeveloperMapper developerMapper;
 
-    private static final int GENERATED_PASSWORD_LENGTH = 12;
-    private String generateRandomPassword() {
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[GENERATED_PASSWORD_LENGTH];
-        random.nextBytes(bytes);
-        String base64Password = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        String cleanPassword = base64Password.replaceAll("[^a-zA-Z0-9]", "");
-        return cleanPassword.substring(0, Math.min(GENERATED_PASSWORD_LENGTH, cleanPassword.length()));
-    }
 
     @Override
     @Auditable(action = ActionType.CREATE, entityType = EntityType.DEVELOPER)
@@ -55,58 +40,38 @@ public class DeveloperServiceImpl implements DeveloperService {
             @CacheEvict(value = "developers", allEntries = true),
             @CacheEvict(value = "developerStats", allEntries = true)
     })
-    public Developer createDeveloper(String name, String email, String skills) {
-
-        if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyExistsException("A user with this email already exists: " + email);
+    public void createDeveloper(DeveloperRequestDto dto, User user) {
+        if (developerRepository.existsByEmail(dto.getEmail())) {
+            throw new EmailAlreadyExistsException("Developer with email already exists: " + dto.getEmail());
         }
 
-        User newUser = new User();
-        newUser.setEmail(email);
-        newUser.setUsername(email);
-        String password = generateRandomPassword();
-        System.out.println(password);
-        newUser.setPassword(passwordEncoder.encode(password));
-        newUser.setProvider(AuthProvider.LOCAL);
-
-        String[] nameParts = name.split(" ", 2);
-        newUser.setFirstName(nameParts.length > 0 ? nameParts[0] : "");
-        newUser.setLastName(nameParts.length > 1 ? nameParts[1] : "");
-        newUser.setEnabled(true);
-
-        Role developerRole = roleRepository.findByName(RoleName.ROLE_DEVELOPER)
-                .orElseThrow(() -> new RuntimeException("Error: ROLE_DEVELOPER not found. Please ensure roles are initialized in the database."));
-
-        Set<Role> roles = new HashSet<>();
-        roles.add(developerRole);
-        newUser.setRoles(roles);
-        User savedUser = userRepository.save(newUser);
-
-        Developer developer = new Developer(name, email, skills);
-        developer.setUser(savedUser);
-        return developerRepository.save(developer);
-
+        Developer dev = new Developer(dto.getName(), dto.getEmail(), dto.getSkills());
+        dev.setUser(user);
+        developerRepository.save(dev);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "developers", key = "'all'")
-    public List<Developer> getAllDevelopers() {
-        return developerRepository.findAll();
+    @Cacheable(value = "developers", key = "'all'", unless = "#result.isEmpty()")
+    public Page<Developer> getAllDevelopers(Pageable pageable) {
+        return developerRepository.findAll(pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "developers", key = "#id")
-    public Developer getDeveloperById(Long id) {
-        return developerRepository.findById(id).orElseThrow(() -> new DeveloperNotFoundException(id));
+    public DeveloperResponseDto getDeveloperById(Long id) {
+        Developer dev = developerRepository.findById(id)
+                .orElseThrow(() -> new DeveloperNotFoundException("Developer not found with id: " + id));
+        return new DeveloperResponseDto(dev.getId(), dev.getName(), dev.getEmail(), dev.getSkills());
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "developers", key = "'email_' + #email")
-    public Optional<Developer> getDeveloperByEmail(String email) {
-        return developerRepository.findByEmail(email);
+    public Developer getDeveloperByEmail(String email) {
+        return developerRepository.findByEmail(email)
+                .orElseThrow(() -> new DeveloperNotFoundException("Developer not found with email: " + email));
     }
 
     @Override
@@ -114,35 +79,39 @@ public class DeveloperServiceImpl implements DeveloperService {
     @Caching(evict = {
             @CacheEvict(value = "developers", key = "#id"),
             @CacheEvict(value = "developers", allEntries = true),
-            @CacheEvict(value = "developers", key = "'email_' + #email"),
             @CacheEvict(value = "developerStats", allEntries = true)
     })
-    public Developer updateDeveloper(Long id, String name, String email, String skills) {
+    public DeveloperResponseDto updateDeveloper(Long id, DeveloperRequestDto dto) {
         Developer developer = developerRepository.findById(id)
-                .orElseThrow(() -> new DeveloperNotFoundException(id));
+                .orElseThrow(() -> new DeveloperNotFoundException("Developer not found with id: " + id));
 
-        if (!developer.getEmail().equals(email)) {
-            if (userRepository.existsByEmail(email)) {
-                throw new EmailAlreadyExistsException("A user with this email already exists: " + email);
-            }
-            User associatedUser = developer.getUser();
-            if (associatedUser != null) {
-                associatedUser.setEmail(email);
-                associatedUser.setUsername(email);
-                userRepository.save(associatedUser);
-            }
+        if (!developer.getEmail().equals(dto.getEmail()) && userRepository.existsByEmail(dto.getEmail())) {
+            throw new EmailAlreadyExistsException("User with email already exists: " + dto.getEmail());
         }
 
-        developer.setName(name);
-        developer.setEmail(email);
-        developer.setSkills(skills);
+        Optional<User> user = userRepository.findById(developer.getUserId());
+        User existingUser = user.orElse(null);
+        assert existingUser != null;
+        if (!existingUser.getEmail().equals(dto.getEmail()) && userRepository.existsByEmail(dto.getEmail())) {
+            throw new EmailAlreadyExistsException("User with email already exists: " + dto.getEmail());
+        }
+        if (!existingUser.getEmail().equals(dto.getEmail())) {
 
-        return developerRepository.save(developer);
+            existingUser.setEmail(dto.getEmail());
+            userRepository.save(existingUser);
+        }
+
+        developer.setName(dto.getName());
+        developer.setEmail(dto.getEmail());
+        developer.setSkills(dto.getSkills());
+
+        Developer savedDev = developerRepository.save(developer);
+        return developerMapper.toResponseDto(savedDev);
     }
+
 
     @Override
     @Auditable(action = ActionType.DELETE, entityType = EntityType.DEVELOPER)
-    @Transactional
     @Caching(evict = {
             @CacheEvict(value = "developers", allEntries = true),
             @CacheEvict(value = "developerStats", allEntries = true),
@@ -151,13 +120,19 @@ public class DeveloperServiceImpl implements DeveloperService {
     })
     public void deleteDeveloper(Long id) {
         Developer developer = developerRepository.findById(id)
-                .orElseThrow(() -> new DeveloperNotFoundException(id));
+                .orElseThrow(() -> new DeveloperNotFoundException("Developer not found with id: " + id));
+        if (developer == null) {
+            throw new DeveloperNotFoundException("Developer not found with id: " + id);
+        }
 
-        User associatedUser = developer.getUser();
+        if (developer.getAssignedTask() != null) {
+            throw new IllegalStateException("Cannot delete developer with assigned tasks.");
+        }
+
+        if (developer.getUser() != null) {
+            userRepository.delete(developer.getUser());
+        }
         developerRepository.delete(developer);
-         if (associatedUser != null) {
-             userRepository.delete(associatedUser);
-         }
     }
 
     @Override
@@ -175,13 +150,11 @@ public class DeveloperServiceImpl implements DeveloperService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean isEmailTaken(String email) {
         return userRepository.existsByEmail(email) || developerRepository.existsByEmail(email);
     }
 
     @Override
-    @Transactional(readOnly = true)
     @Cacheable(value = "developerStats", key = "'total_count'")
     public long getTotalDeveloperCount() {
         return developerRepository.count();
