@@ -15,7 +15,6 @@ import lii.buildmaster.projecttracker.model.entity.Role;
 import lii.buildmaster.projecttracker.model.entity.User;
 import lii.buildmaster.projecttracker.model.enums.AuthProvider;
 import lii.buildmaster.projecttracker.model.enums.RoleName;
-import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
 import lii.buildmaster.projecttracker.repository.jpa.RoleRepository;
 import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
 import lii.buildmaster.projecttracker.security.oauth2.CookieUtils;
@@ -146,11 +145,6 @@ public class AuthService {
 
                 devDto = developerMapper.toResponseDto(dev);
             }
-
-
-
-            System.out.println("Mapped DTO: " + devDto);
-
 
             return new AuthenticatedUserResponseDto(
                     user.getId(), user.getUsername(), user.getEmail(), devDto
