@@ -8,7 +8,7 @@ import lii.buildmaster.projecttracker.model.dto.summary.ProjectSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import jakarta.validation.Valid;
-import lii.buildmaster.projecttracker.service.impl.ProjectServiceImpl;
+import lii.buildmaster.projecttracker.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProjectControllerV1 {
 
-    private final ProjectServiceImpl projectServiceImpl;
+    private final ProjectService projectService;
     private final ProjectMapper projectMapper;
 
 
