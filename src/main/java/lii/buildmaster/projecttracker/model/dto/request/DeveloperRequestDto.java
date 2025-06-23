@@ -3,14 +3,14 @@ package lii.buildmaster.projecttracker.model.dto.request;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeveloperRequestDto {
+@Builder
+public class   DeveloperRequestDto {
 
     @NotBlank(message = "Developer name is required")
     @Size(max = 100, message = "Name must not exceed 100 characters")
