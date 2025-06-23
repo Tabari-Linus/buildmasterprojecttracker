@@ -1,5 +1,7 @@
 package lii.buildmaster.projecttracker.controller.v1;
 
+import lii.buildmaster.projecttracker.model.dto.info.OAuth2ProviderInfo;
+import lii.buildmaster.projecttracker.model.dto.response.OAuth2ProvidersResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -19,19 +21,13 @@ public class OAuth2Controller {
     private String githubClientId;
 
     @GetMapping("/providers")
-    public Map<String, Object> getOAuth2Providers() {
-        Map<String, Object> providers = new HashMap<>();
+    public OAuth2ProvidersResponse getOAuth2Providers() {
+        Map<String, OAuth2ProviderInfo> providers = new HashMap<>();
 
-        Map<String, String> google = new HashMap<>();
-        google.put("authUrl", "/oauth2/authorize/google");
-        google.put("clientId", googleClientId);
-        providers.put("google", google);
+        providers.put("google", new OAuth2ProviderInfo("/oauth2/authorize/google", googleClientId));
+        providers.put("github", new OAuth2ProviderInfo("/oauth2/authorize/github", githubClientId));
 
-        Map<String, String> github = new HashMap<>();
-        github.put("authUrl", "/oauth2/authorize/github");
-        github.put("clientId", githubClientId);
-        providers.put("github", github);
-
-        return providers;
+        return new OAuth2ProvidersResponse(providers);
     }
+
 }
