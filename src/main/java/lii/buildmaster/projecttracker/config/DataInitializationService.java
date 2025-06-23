@@ -44,20 +44,37 @@ public class DataInitializationService {
         var project2 = createProject("Mobile Banking App", "Secure mobile banking application with biometric authentication", 4, ProjectStatus.PLANNING);
         var overdueProject = createProject("Legacy System Migration", "Migrating legacy systems to cloud infrastructure", -1, ProjectStatus.ON_HOLD);
 
-        var dev1 = createDeveloper(
-                DeveloperRequestDto.builder()
-                        .name("Kwame Oduru")
-                        .email("kwame.oduru@buildmaster.com")
-                        .skills("Java, Spring Boot, React, PostgreSQL, Docker")
-                        .build()
-        );
-        var dev2 = createDeveloper(
-                DeveloperRequestDto.builder()
-                        .name("David Mawuli")
-                        .email("david.mawuli@buildmaster.com")
-                        .skills("Java, Spring Boot, Microservices, MySQL, Jenkins")
-                        .build()
-        );
+        createSampleUser("Kwame Oduru", "kwame.oduru@buildmaster.com", "Kwame", "Oduru", RoleName.ROLE_DEVELOPER);
+        User developerUser = userRepository.findByEmail("kwame.oduru@buildmaster.com")
+                .orElseThrow(() -> new RuntimeException("Developer user not found"));
+        if (!developerRepository.existsByEmail("kwame.oduru@buildmaster.com")) {
+            DeveloperRequestDto dev1Dto = DeveloperRequestDto.builder()
+                    .name("Kwame Oduru")
+                    .email("kwame.oduru@buildmaster.com")
+                    .skills("Java, Spring Boot, React, PostgreSQL, Docker")
+                    .password("password12345!")
+                    .build();
+            createDeveloper(dev1Dto, developerUser);
+        }
+
+        var dev1 = developerRepository.findDeveloperByEmail("kwame.oduru@buildmaster.com");
+
+        createSampleUser("David Mawuli", "david.mawuli@buildmaster.com", "David", "Mawuli", RoleName.ROLE_DEVELOPER);
+        User developerUser2 = userRepository.findByEmail("david.mawuli@buildmaster.com")
+                .orElseThrow(() -> new RuntimeException("Developer user not found"));
+        if (!developerRepository.existsByEmail("david.mawuli@buildmaster.com")) {
+            DeveloperRequestDto dev2Dto = DeveloperRequestDto.builder()
+                    .name("David Mawuli")
+                    .email("david.mawuli@buildmaster.com")
+                    .skills("Java, Spring Boot, Angular, MySQL, Kubernetes")
+                    .password("password12345!")
+                    .build();
+            createDeveloper(dev2Dto, developerUser2);
+        }
+
+
+
+        var dev2 = developerRepository.findDeveloperByEmail("david.mawuli@buildmaster.com");
 
         createTask("User Authentication Module", "Implement user authentication with JWT and OAuth2", TaskStatus.TODO, 10, project1.getId(), dev1.getId());
         createTask("Payment Gateway Integration", "Integrate payment gateway for secure transactions", TaskStatus.IN_PROGRESS, 15, project1.getId(), null);
@@ -88,8 +105,8 @@ public class DataInitializationService {
         );
     }
 
-    private Developer createDeveloper(DeveloperRequestDto dto) {
-        return developerService.createDeveloper(dto);
+    private void createDeveloper(DeveloperRequestDto dto, User user) {
+        developerService.createDeveloper(dto, user);
     }
 
     private void createTask(String title, String description, TaskStatus status, int dueInDays, Long projectId, Long developerId) {
