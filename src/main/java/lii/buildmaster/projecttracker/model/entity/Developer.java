@@ -76,13 +76,7 @@ public class Developer extends AuditableEntity{
         return user != null ? user.getId() : null;
     }
 
-    public void assignTask(Task task) {
-        assignedTasks.add(task);
-        task.setDeveloper(this);
-    }
-
-    public void unassignTask(Task task) {
-        assignedTasks.remove(task);
-        task.setDeveloper(null);
+    public Task getAssignedTask() {
+        return assignedTasks != null && !assignedTasks.isEmpty() ? assignedTasks.get(0) : null;
     }
 }
