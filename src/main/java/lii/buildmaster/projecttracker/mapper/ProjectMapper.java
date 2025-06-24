@@ -8,23 +8,18 @@ import lii.buildmaster.projecttracker.model.enums.TaskStatus;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.springframework.data.domain.Page;
 
 @Mapper(componentModel = "spring")
 public interface ProjectMapper {
 
-
     Project toEntity(ProjectRequestDto requestDto);
-
 
     @Mapping(target = "taskCount", expression = "java(getTaskCount(project))")
     ProjectResponseDto toResponseDto(Project project);
 
-
     @Mapping(target = "taskCount", expression = "java(getTaskCount(project))")
     @Mapping(target = "completedTaskCount", expression = "java(getCompletedTaskCount(project))")
     ProjectSummaryDto toSummaryDto(Project project);
-
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tasks", ignore = true)
@@ -46,8 +41,6 @@ public interface ProjectMapper {
     @Mapping(target = "taskCount", expression = "java(getTaskCount(project))")
     ProjectResponseDto toSummaryResponseDto(Project project);
 
-
-    @Mapping(target = "taskCount", source = "taskCount")
-    @Mapping(target = "completedTaskCount", ignore = true)
     ProjectSummaryDto toSummaryDto(ProjectResponseDto dto);
+
 }
