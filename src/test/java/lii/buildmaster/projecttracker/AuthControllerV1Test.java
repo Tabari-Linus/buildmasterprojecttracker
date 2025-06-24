@@ -81,7 +81,8 @@ class AuthControllerV1Test {
         var response = controller.login(login);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        JwtResponseDto dto = (JwtResponseDto) response.getBody();
+        JwtResponseDto dto = response.getBody();
+        assertNotNull(dto);
         assertEquals("jwt-token", dto.getToken());
         assertEquals("refresh-token", dto.getRefreshToken());
         assertEquals("developer@gmail.com", dto.getEmail());
@@ -111,6 +112,7 @@ class AuthControllerV1Test {
         var response = controller.register(register);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertTrue(((MessageResponseDto) response.getBody()).isSuccess());
     }
 
@@ -123,6 +125,7 @@ class AuthControllerV1Test {
         var response = controller.register(register);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertFalse(((MessageResponseDto) response.getBody()).isSuccess());
     }
 
@@ -139,6 +142,7 @@ class AuthControllerV1Test {
         var response = controller.getOAuth2Token(request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("jwt-token", ((JwtResponseDto) response.getBody()).getToken());
     }
 
@@ -154,6 +158,7 @@ class AuthControllerV1Test {
         var response = controller.refresh(refreshRequest);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("new-jwt", ((TokenRefreshResponseDto) response.getBody()).getAccessToken());
     }
 
@@ -167,6 +172,7 @@ class AuthControllerV1Test {
         var response = controller.getUserDetails();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("testuser", ((AuthenticatedUserResponseDto) response.getBody()).getUsername());
     }
 
@@ -191,6 +197,7 @@ class AuthControllerV1Test {
         var response = controller.validate("Bearer token123");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertTrue(((MessageResponseDto) response.getBody()).getMessage().contains("testuser"));
     }
 
@@ -199,6 +206,7 @@ class AuthControllerV1Test {
         var response = controller.logout();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("Logged out successfully!", ((MessageResponseDto) response.getBody()).getMessage());
     }
 }
