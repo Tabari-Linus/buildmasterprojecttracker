@@ -1,6 +1,5 @@
 package lii.buildmaster.projecttracker.service.impl;
 
-
 import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
 import lii.buildmaster.projecttracker.exception.UnauthorizedException;
@@ -18,6 +17,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,26 +45,21 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public List<Project> getAllProjects() {
-        return projectRepository.findAll();
-    }
-
-
-    @Override
-    public List<Project> getAllProjects(Pageable pageable) {
+    @Transactional(readOnly = true)
+    @Cacheable(value = "projects", key = "'paged_all_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+    public Page<Project> getAllProjects(Pageable pageable) {
         if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            return projectRepository.findAll();
+            return projectRepository.findAll(pageable);
         } else if (SecurityUtils.isDeveloper()) {
             String username = SecurityUtils.getCurrentUsername();
-            return (List<Project>) projectRepository.findProjectsByDeveloperUsername(username, pageable );
+            List<Project> projects = projectRepository.findProjectsByDeveloperUsername(username, pageable);
+            return new PageImpl<>(projects, pageable, projects.size());
         } else if (SecurityUtils.isContractor()) {
-            // Contractors see limited project information
-            return projectRepository.findAll(); // Note: You might want to return a simplified list for contractors
+            return projectRepository.findAll(pageable);
         } else {
             throw new UnauthorizedException("You don't have permission to view projects");
         }
     }
-
 
 
     @Override
@@ -74,8 +69,6 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
-        // Additional security check already done by @PreAuthorize
-        // For contractors, you might want to return limited information
         if (SecurityUtils.isContractor()) {
             return projectMapper.toSummaryResponseDto(project);
         }
@@ -84,23 +77,10 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
 
-    @Override
-    public List<Project> getProjectsByStatus(String status) {
-        ProjectStatus projectStatus = ProjectStatus.valueOf(status.toUpperCase());
-        return projectRepository.findProjectByStatus((projectStatus));
-    }
 
     @Override
-    public Page<ProjectResponseDto> getProjectsByStatus(String status, Pageable pageable) {
-        ProjectStatus projectStatus = ProjectStatus.valueOf(status.toUpperCase());
-        Page<Project> projectPage = projectRepository.findByStatus(projectStatus, pageable);
-        return projectPage.map(projectMapper::toResponseDto);
-
-    }
-
     @Transactional(readOnly = true)
     @Cacheable(value = "projects", key = "'status_' + #status.name()")
-    @Override
     public Page<ProjectResponseDto> getProjectsByStatus(ProjectStatus status, Pageable pageable) {
         Page<Project> projects;
 
@@ -110,15 +90,14 @@ public class ProjectServiceImpl implements ProjectService {
             String username = SecurityUtils.getCurrentUsername();
             projects = projectRepository.findByStatusAndDeveloperUsername(status, username, pageable);
         } else if (SecurityUtils.isContractor()) {
-            // Contractors see limited project information
-            projects = (Page<Project>) projectRepository.findByStatus(status, pageable);
-            // Note: You might want to return a simplified DTO for contractors
+            projects = projectRepository.findByStatus(status, pageable);
         } else {
             throw new UnauthorizedException("You don't have permission to view projects");
         }
 
         return projects.map(projectMapper::toResponseDto);
     }
+
     @Override
     @Auditable(action = ActionType.UPDATE, entityType = EntityType.PROJECT)
     @Caching(evict = {
@@ -140,7 +119,6 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Auditable(action = ActionType.DELETE, entityType = EntityType.PROJECT)
-    @Transactional
     @Caching(evict = {
             @CacheEvict(value = "projects", allEntries = true),
             @CacheEvict(value = "projectStats", allEntries = true),
@@ -151,8 +129,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
-        projectRepository.deleteById(id);
-
+        projectRepository.delete(project);
     }
 
     @Override
@@ -189,7 +166,5 @@ public class ProjectServiceImpl implements ProjectService {
 
         project.setStatus(ProjectStatus.COMPLETED);
         return projectRepository.save(project);
-
     }
-
 }
