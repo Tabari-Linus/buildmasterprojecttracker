@@ -3,6 +3,7 @@ package lii.buildmaster.projecttracker.controller.v1;
 import jakarta.validation.Valid;
 import lii.buildmaster.projecttracker.model.dto.request.UserRoleUpdateRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.UserResponseDto;
+import lii.buildmaster.projecttracker.model.enums.RoleName;
 import lii.buildmaster.projecttracker.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -54,7 +55,7 @@ public class AdminControllerV1 {
 
     @GetMapping("/users/role/{roleName}")
     public ResponseEntity<Page<UserResponseDto>> getUsersByRole(
-            @PathVariable String roleName,
+            @PathVariable RoleName roleName,
             Pageable pageable) {
         return ResponseEntity.ok(adminService.getUsersByRole(roleName, pageable));
     }
