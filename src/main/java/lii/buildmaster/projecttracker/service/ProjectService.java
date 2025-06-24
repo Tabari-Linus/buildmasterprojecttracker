@@ -16,11 +16,7 @@ public interface ProjectService {
 
     Project createProject(String name, String description, LocalDateTime deadline, ProjectStatus status);
 
-    List<Project> getAllProjects();
-
-    @Transactional(readOnly = true)
-    @Cacheable(value = "projects", key = "'all'")
-    List<Project> getAllProjects(Pageable pageable);
+    Page<Project> getAllProjects(Pageable pageable);
 
     ProjectResponseDto getProjectById(Long id);
 
