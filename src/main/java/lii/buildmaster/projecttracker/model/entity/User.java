@@ -123,4 +123,9 @@ public class User extends AuditableEntity implements UserDetails {
     public Object getFullName() {
         return getFirstName() + " " + getLastName();
     }
+
+    public String generateTemporaryPassword() {
+        return UUID.randomUUID().toString().replace("-", "")
+                .substring(0, 12) + "!";
+    }
 }
