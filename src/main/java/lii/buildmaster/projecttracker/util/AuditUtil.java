@@ -16,8 +16,8 @@ public class AuditUtil {
     private final ObjectMapper objectMapper;
 
     public AuditUtil() {
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
     }
 
 
