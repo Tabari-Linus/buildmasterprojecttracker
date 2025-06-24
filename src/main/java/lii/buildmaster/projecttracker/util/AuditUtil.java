@@ -13,8 +13,6 @@ import java.util.Map;
 @Component
 public class AuditUtil {
 
-    private final ObjectMapper objectMapper;
-
     public AuditUtil() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
