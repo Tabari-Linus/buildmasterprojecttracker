@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class DeveloperControllerV1TestRefactored {
+class DeveloperControllerV1Test{
 
     @Mock private DeveloperService developerService;
     @Mock private DeveloperMapper developerMapper;
@@ -85,6 +85,7 @@ class DeveloperControllerV1TestRefactored {
         var response = developerController.getDeveloperById(1L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("John Doe", response.getBody().getName());
     }
 
@@ -97,6 +98,7 @@ class DeveloperControllerV1TestRefactored {
         var response = developerController.getDeveloperByEmail("john.doe@example.com");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("john.doe@example.com", response.getBody().getEmail());
     }
 
@@ -119,6 +121,7 @@ class DeveloperControllerV1TestRefactored {
         var response = developerController.updateDeveloper(1L, testRequestDto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("John Doe", response.getBody().getName());
     }
 
@@ -139,6 +142,7 @@ class DeveloperControllerV1TestRefactored {
         var response = developerController.searchByName("John");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
     }
 
@@ -150,6 +154,7 @@ class DeveloperControllerV1TestRefactored {
         var response = developerController.searchBySkill("Java");
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals(1, response.getBody().size());
     }
 
@@ -161,6 +166,7 @@ class DeveloperControllerV1TestRefactored {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
         assertEquals(true, body.get("available"));
     }
 
@@ -172,6 +178,7 @@ class DeveloperControllerV1TestRefactored {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
         assertEquals(false, body.get("available"));
     }
 
@@ -183,6 +190,7 @@ class DeveloperControllerV1TestRefactored {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
         assertEquals(10L, body.get("totalCount"));
     }
 }
