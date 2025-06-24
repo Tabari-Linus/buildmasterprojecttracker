@@ -1,8 +1,11 @@
 package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.exception.UserNotFoundException;
+import lii.buildmaster.projecttracker.mapper.UserMapper;
 import lii.buildmaster.projecttracker.model.dto.request.UserRoleUpdateRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.UserResponseDto;
+import lii.buildmaster.projecttracker.model.entity.User;
+import lii.buildmaster.projecttracker.model.enums.RoleName;
 import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
 import lii.buildmaster.projecttracker.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,7 @@ import java.util.Map;
 public class AdminServiceImpl implements AdminService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
     public Page<UserResponseDto> getAllUsers(Pageable pageable) {
@@ -65,8 +69,10 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public Page<UserResponseDto> getUsersByRole(String roleName, Pageable pageable) {
-        return null;
+    public Page<UserResponseDto> getUsersByRole(RoleName roleName, Pageable pageable) {
+        Page<User> users = userRepository.findByRolesName(roleName, pageable);
+        return users.map(userMapper::toResponseDto);
+
     }
 
     @Override
