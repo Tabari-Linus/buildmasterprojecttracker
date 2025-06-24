@@ -1,7 +1,11 @@
 package lii.buildmaster.projecttracker.repository.jpa;
 
+import lii.buildmaster.projecttracker.model.dto.response.UserResponseDto;
 import lii.buildmaster.projecttracker.model.entity.User;
 import lii.buildmaster.projecttracker.model.enums.AuthProvider;
+import lii.buildmaster.projecttracker.model.enums.RoleName;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +19,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    Page<User> findByRolesName(RoleName roles_name, Pageable pageable);
 
     Optional<User> findByUsername(String username);
 
