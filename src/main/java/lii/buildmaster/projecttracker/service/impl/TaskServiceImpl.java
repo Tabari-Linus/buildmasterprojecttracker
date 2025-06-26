@@ -24,6 +24,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -96,14 +97,14 @@ public class TaskServiceImpl implements TaskService {
 
 
     @Override
-    public Page <TaskResponseDto> getAllTasks(Pageable pageable) {
-        return (Page<TaskResponseDto>) taskRepository.findAll(pageable).stream()
+    public Page<TaskResponseDto> getAllTasks(Pageable pageable) {
+        List<TaskResponseDto> taskResponseDtos = taskRepository.findAll(pageable).stream()
                 .map(task -> {
                     TaskResponseDto responseDto = taskMapper.toResponseDto(task);
-                    return getTaskResponseDto(task, responseDto);
+                    return responseDto;
                 })
                 .collect(Collectors.toList());
-
+        return new PageImpl<>(taskResponseDtos, pageable, taskRepository.count());
     }
 
     @Override

@@ -26,11 +26,9 @@ public interface AdminService {
 
     Map<String, Object> getSystemStatistics();
 
-    Page<? > getAuditLogs(String entityType, String actionType, Pageable pageable);
 
     UserResponseDto approveContractor(
-            @PathVariable Long id,
-            @RequestParam String newRole);
+            @PathVariable Long id);
 
     String resetUserPassword(@PathVariable Long id);
 
