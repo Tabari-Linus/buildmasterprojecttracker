@@ -416,6 +416,13 @@ docker-compose logs -f app
 docker-compose down
 ```
 
+
+## 🧠 Memory Usage Patterns
+
+Analysis of the VisualVM and Heap Dump data. Please provide findings from:
+![VisualVM Memory Analysis](docs/images/VisualVM%20after%205%20minutes.png)
+![Heap Dump Analysis](docs/images/Heap%20Dump%20after%205%20minutes.png)
+
 ## 👥 Authors
 
 - **Linus Tabari**
