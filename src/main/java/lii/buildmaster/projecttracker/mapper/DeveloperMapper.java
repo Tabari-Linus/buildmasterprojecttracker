@@ -12,7 +12,6 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface DeveloperMapper {
 
-    Developer toEntity(DeveloperRequestDto requestDto);
 
     @Mapping(target = "totalTaskCount", expression = "java(getTotalTaskCount(developer))")
     @Mapping(target = "activeTaskCount", expression = "java(getActiveTaskCount(developer))")
@@ -27,6 +26,11 @@ public interface DeveloperMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(@MappingTarget Developer developer, DeveloperRequestDto requestDto);
+
+
+    // Map from DeveloperRequestDto to Developer entity
+    @Mapping(target = "user", ignore = true) // User will be set manually in service
+    Developer toEntity(DeveloperRequestDto developerRequestDto);
 
     default long getTotalTaskCount(Developer developer) {
         return developer.getAssignedTasks() != null ? developer.getAssignedTasks().size() : 0;
