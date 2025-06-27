@@ -21,5 +21,7 @@ USER mrlii
 # Expose port
 EXPOSE 8080
 
+EXPOSE 9010
+
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

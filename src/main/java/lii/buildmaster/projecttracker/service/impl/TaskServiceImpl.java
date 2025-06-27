@@ -99,17 +99,14 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public Page<TaskResponseDto> getAllTasks(Pageable pageable) {
         List<TaskResponseDto> taskResponseDtos = taskRepository.findAll(pageable).stream()
-                .map(task -> {
-                    TaskResponseDto responseDto = taskMapper.toResponseDto(task);
-                    return responseDto;
-                })
+                .map(taskMapper::toResponseDto)
                 .collect(Collectors.toList());
         return new PageImpl<>(taskResponseDtos, pageable, taskRepository.count());
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "tasks", key = "'all'")
+    @Cacheable(value = "tasks", key = "'all'")  
     public List<Task> getAllTask() {
         return taskRepository.findAll();
     }
@@ -118,7 +115,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "#id")
     public TaskResponseDto getTaskById(Long id) {
-        if(!taskRepository.findById(id).isEmpty()){
+        if(taskRepository.findById(id).isPresent()){
             return taskRepository.findById(id)
                 .map(task -> {
                     TaskResponseDto responseDto = taskMapper.toResponseDto(task);

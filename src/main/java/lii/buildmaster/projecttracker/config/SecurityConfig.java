@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/oauth2-test.html", "/dashboard.html", "/oauth2-callback.html", "/login/**", "/oauth2/**","/api/v1/auth/**", "/api/v1/error").permitAll()
                         .requestMatchers("/api/v1/oauth2/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/actuator","/actuator/**").permitAll()
 
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**","/h2-console/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
