@@ -43,6 +43,23 @@ services:
       timeout: 10s
       retries: 5
 
+  prometheus:
+    image: prom/prometheus:v2.37.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - buildmaster-network
+
+  grafana:
+    image: grafana/grafana:9.0.0
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    networks:
+      - buildmaster-network
   # Spring Boot Application
   app:
     build:
@@ -51,6 +68,14 @@ services:
     container_name: buildmaster-app
     restart: unless-stopped
     environment:
+      AVA_TOOL_OPTIONS: >
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.port=9010
+        -Dcom.sun.management.jmxremote.rmi.port=9010
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Djava.rmi.server.hostname=127.0.0.1
+
       # PostgreSQL Configuration
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/buildmaster_db
       SPRING_DATASOURCE_USERNAME: mrlii

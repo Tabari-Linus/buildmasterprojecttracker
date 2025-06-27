@@ -111,7 +111,7 @@ class DeveloperControllerV1Test{
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
-    
+
 
     @Test
     void updateDeveloper_Success() {
