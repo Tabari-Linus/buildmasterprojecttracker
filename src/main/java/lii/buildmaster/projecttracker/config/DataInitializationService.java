@@ -1,5 +1,6 @@
 package lii.buildmaster.projecttracker.config;
 
+import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.TaskRequestDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Role;
@@ -37,70 +38,93 @@ public class DataInitializationService {
     private final DeveloperService developerService;
     private final TaskService taskService;
 
-
     public void initialize() {
+        createRoles();
+        var project1 = createProject("E-Commerce Platform", "Building a modern e-commerce platform with microservices architecture", 6, ProjectStatus.IN_PROGRESS);
+        var project2 = createProject("Mobile Banking App", "Secure mobile banking application with biometric authentication", 4, ProjectStatus.PLANNING);
+        var overdueProject = createProject("Legacy System Migration", "Migrating legacy systems to cloud infrastructure", -1, ProjectStatus.ON_HOLD);
+
+        createSampleUser("Kwame Oduru", "kwame.oduru@buildmaster.com", "Kwame", "Oduru", RoleName.ROLE_DEVELOPER);
+        User developerUser = userRepository.findByEmail("kwame.oduru@buildmaster.com")
+                .orElseThrow(() -> new RuntimeException("Developer user not found"));
+        if (!developerRepository.existsByEmail("kwame.oduru@buildmaster.com")) {
+            DeveloperRequestDto dev1Dto = DeveloperRequestDto.builder()
+                    .name("Kwame Oduru")
+                    .email("kwame.oduru@buildmaster.com")
+                    .skills("Java, Spring Boot, React, PostgreSQL, Docker")
+                    .password("password12345!")
+                    .build();
+            createDeveloper(dev1Dto, developerUser);
+        }
+
+        var dev1 = developerRepository.findDeveloperByEmail("kwame.oduru@buildmaster.com");
+
+        createSampleUser("David Mawuli", "david.mawuli@buildmaster.com", "David", "Mawuli", RoleName.ROLE_DEVELOPER);
+        User developerUser2 = userRepository.findByEmail("david.mawuli@buildmaster.com")
+                .orElseThrow(() -> new RuntimeException("Developer user not found"));
+        if (!developerRepository.existsByEmail("david.mawuli@buildmaster.com")) {
+            DeveloperRequestDto dev2Dto = DeveloperRequestDto.builder()
+                    .name("David Mawuli")
+                    .email("david.mawuli@buildmaster.com")
+                    .skills("Java, Spring Boot, Angular, MySQL, Kubernetes")
+                    .password("password12345!")
+                    .build();
+            createDeveloper(dev2Dto, developerUser2);
+        }
+
+
+
+        var dev2 = developerRepository.findDeveloperByEmail("david.mawuli@buildmaster.com");
+
+        createTask("User Authentication Module", "Implement user authentication with JWT and OAuth2", TaskStatus.TODO, 10, project1.getId(), dev1.getId());
+        createTask("Payment Gateway Integration", "Integrate payment gateway for secure transactions", TaskStatus.IN_PROGRESS, 15, project1.getId(), null);
+        createTask("UI/UX Design", "Design user-friendly interface for the e-commerce platform", TaskStatus.DONE, 5, project1.getId(), dev2.getId());
+
+        createAdminUser();
+        createSampleUser("manager1", "manager@projecttracker.com", "Manager", "One", RoleName.ROLE_MANAGER);
+        createSampleUser("developercoder", "developercoder@gmail.com", "Developer", "Coder", RoleName.ROLE_DEVELOPER);
+    }
+
+    private void createRoles() {
         Arrays.stream(RoleName.values()).forEach(roleName -> {
             if (!roleRepository.existsByName(roleName)) {
-                Role role = Role.builder()
+                roleRepository.save(Role.builder()
                         .name(roleName)
                         .description(roleName.getDescription())
-                        .build();
-                roleRepository.save(role);
+                        .build());
             }
         });
+    }
 
-        var project1 = projectService.createProject(
-                "E-Commerce Platform",
-                "Building a modern e-commerce platform with microservices architecture",
-                LocalDateTime.now().plusMonths(6),
-                ProjectStatus.IN_PROGRESS
+    private lii.buildmaster.projecttracker.model.entity.Project createProject(String name, String description, int monthsToAdd, ProjectStatus status) {
+        return projectService.createProject(
+                name,
+                description,
+                LocalDateTime.now().plusMonths(monthsToAdd),
+                status
         );
+    }
 
-        var project2 = projectService.createProject(
-                "Mobile Banking App",
-                "Secure mobile banking application with biometric authentication",
-                LocalDateTime.now().plusMonths(4),
-                ProjectStatus.PLANNING
-        );
+    private void createDeveloper(DeveloperRequestDto dto, User user) {
+        developerService.createDeveloper(dto, user);
+    }
 
-        var overdueProject = projectService.createProject(
-                "Legacy System Migration",
-                "Migrating legacy systems to cloud infrastructure",
-                LocalDateTime.now().minusDays(30), // Past deadline
-                ProjectStatus.ON_HOLD
-        );
+    private void createTask(String title, String description, TaskStatus status, int dueInDays, Long projectId, Long developerId) {
+        TaskRequestDto.TaskRequestDtoBuilder builder = TaskRequestDto.builder()
+                .title(title)
+                .description(description)
+                .status(status)
+                .dueDate(LocalDateTime.now().plusDays(dueInDays))
+                .projectId(projectId);
 
-        var dev1 = developerService.createDeveloper(
-                "Kwame Oduru",
-                "kwame.oduru@buildmaster.com",
-                "Java, Spring Boot, React, PostgreSQL, Docker"
-        );
+        if (developerId != null) {
+            builder.developerId(developerId);
+        }
 
-        var dev4 = developerService.createDeveloper(
-                "David Mawuli",
-                "david.mawuli@buildmaster.com",
-                "Java, Spring Boot, Microservices, MySQL, Jenkins"
-        );
+        taskService.createTask(builder.build());
+    }
 
-        TaskRequestDto taskRequestDto = TaskRequestDto.builder()
-                .title("User Authentication Module")
-                .description("Implement user authentication with JWT and OAuth2")
-                .status(TaskStatus.TODO)
-                .dueDate(LocalDateTime.now().plusDays(10))
-                .projectId(project1.getId())
-                .developerId(dev1.getId())
-                .build();
-        taskService.createTask(taskRequestDto);
-
-        taskRequestDto = TaskRequestDto.builder()
-                .title("Payment Gateway Integration")
-                .description("Integrate payment gateway for secure transactions")
-                .status(TaskStatus.IN_PROGRESS)
-                .dueDate(LocalDateTime.now().plusDays(15))
-                .projectId(project1.getId())
-                .build();
-        taskService.createTask(taskRequestDto);
-
+    private void createAdminUser() {
         if (!userRepository.existsByUsername("admin")) {
             Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
                     .orElseThrow(() -> new RuntimeException("Admin role not found"));
@@ -118,9 +142,6 @@ public class DataInitializationService {
 
             userRepository.save(admin);
         }
-
-        createSampleUser("manager1", "manager@projecttracker.com", "Manager", "One", RoleName.ROLE_MANAGER);
-        createSampleUser("developercoder", "developercoder@gmail.com", "Developer", "coder", RoleName.ROLE_DEVELOPER);
     }
 
     private void createSampleUser(String username, String email, String firstName, String lastName, RoleName roleName) {

@@ -17,7 +17,10 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.StringUtils.substring;
 
 @Entity
 @Table(
@@ -52,10 +55,6 @@ public class User extends AuditableEntity implements UserDetails {
     @NotBlank
     @Size(max = 120)
     @JsonIgnore
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-    message = "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"
-            )
     private String password;
 
     @Size(max = 50)
@@ -123,4 +122,9 @@ public class User extends AuditableEntity implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
+
+    public Object getFullName() {
+        return getFirstName() + " " + getLastName();
+    }
+
 }

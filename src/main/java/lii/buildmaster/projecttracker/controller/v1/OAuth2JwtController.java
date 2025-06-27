@@ -44,7 +44,6 @@ public class OAuth2JwtController {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found after OAuth2 login"));
 
-            // Generate JWT tokens
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String jwt = jwtUtils.generateJwtToken(authentication);
             String refreshToken = jwtUtils.generateRefreshToken(user.getUsername());
@@ -80,12 +79,11 @@ public class OAuth2JwtController {
                     .body("No authentication found");
         }
 
-        if (!(authentication.getPrincipal() instanceof OAuth2User)) {
+        if (!(authentication.getPrincipal() instanceof OAuth2User oAuth2User)) {
             return ResponseEntity.badRequest()
                     .body("Not an OAuth2 authentication");
         }
 
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         return getJwtToken(oAuth2User);
     }
 }

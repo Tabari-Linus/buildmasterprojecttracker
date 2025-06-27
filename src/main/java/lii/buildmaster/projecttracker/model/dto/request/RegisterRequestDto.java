@@ -32,4 +32,15 @@ public class RegisterRequestDto {
 
 
     private String role;
+
+    private String skills;
+
+    public RegisterRequestDto(String username, String mail, String pass123, String aNew, String user, String developer) {
+        this.username = username;
+        this.email = mail;
+        this.password = pass123;
+        this.firstName = aNew;
+        this.lastName = user;
+        this.role = developer;
+    }
 }

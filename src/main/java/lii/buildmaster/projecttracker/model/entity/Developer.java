@@ -60,6 +60,10 @@ public class Developer extends AuditableEntity{
         this.skills = skills;
     }
 
+    public Developer(Object fullName, @NotBlank @Size(max = 100) @Email String email, User savedUser, String s) {
+        super();
+    }
+
     public String getUsername() {
         return user != null ? user.getUsername() : null;
     }
@@ -72,13 +76,7 @@ public class Developer extends AuditableEntity{
         return user != null ? user.getId() : null;
     }
 
-    public void assignTask(Task task) {
-        assignedTasks.add(task);
-        task.setDeveloper(this);
-    }
-
-    public void unassignTask(Task task) {
-        assignedTasks.remove(task);
-        task.setDeveloper(null);
+    public Task getAssignedTask() {
+        return assignedTasks != null && !assignedTasks.isEmpty() ? assignedTasks.get(0) : null;
     }
 }

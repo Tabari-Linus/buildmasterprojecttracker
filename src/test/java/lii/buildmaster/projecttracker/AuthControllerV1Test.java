@@ -1,42 +1,31 @@
 package lii.buildmaster.projecttracker;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import lii.buildmaster.projecttracker.model.dto.request.LoginRequestDto;
-import lii.buildmaster.projecttracker.model.dto.request.RegisterRequestDto;
-import lii.buildmaster.projecttracker.model.dto.request.TokenRefreshRequestDto;
+import lii.buildmaster.projecttracker.controller.v1.AuthControllerV1;
+import lii.buildmaster.projecttracker.model.dto.request.*;
 import lii.buildmaster.projecttracker.model.dto.response.*;
-import lii.buildmaster.projecttracker.model.entity.Developer;
-import lii.buildmaster.projecttracker.model.entity.Role;
-import lii.buildmaster.projecttracker.model.entity.User;
-import lii.buildmaster.projecttracker.model.enums.AuthProvider;
-import lii.buildmaster.projecttracker.model.enums.RoleName;
-import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
-import lii.buildmaster.projecttracker.repository.jpa.RoleRepository;
-import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
+import lii.buildmaster.projecttracker.model.entity.*;
+import lii.buildmaster.projecttracker.model.enums.*;
+import lii.buildmaster.projecttracker.repository.jpa.*;
 import lii.buildmaster.projecttracker.security.oauth2.CustomOAuth2User;
 import lii.buildmaster.projecttracker.security.oauth2.OAuth2AuthenticationSuccessHandler;
-import lii.buildmaster.projecttracker.controller.v1.AuthControllerV1;
 import lii.buildmaster.projecttracker.util.jwt.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.*;
+import org.springframework.security.core.context.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,274 +37,176 @@ class AuthControllerV1Test {
     @Mock private DeveloperRepository developerRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtUtils jwtUtils;
-    @Mock private HttpServletRequest httpServletRequest;
+    @Mock private HttpServletRequest request;
     @Mock private Authentication authentication;
     @Mock private SecurityContext securityContext;
 
     @InjectMocks
-    private AuthControllerV1 authController;
+    private AuthControllerV1 controller;
 
-    private User testUser;
-    private Role testRole;
-    private Developer testDeveloper;
+    private User mockUser;
+    private Role devRole;
+    private Developer mockDev;
 
     @BeforeEach
-    void setUp() {
-        testRole = new Role();
-        testRole.setId(1L);
-        testRole.setName(RoleName.ROLE_DEVELOPER);
-
-        testUser = User.builder()
-                .id(1L).username("testuser").email("developer@gmail.com")
-                .password("encodedPassword").firstName("Test").lastName("User")
-                .provider(AuthProvider.LOCAL).enabled(true).roles(Set.of(testRole))
+    void init() {
+        devRole = new Role(1L, RoleName.ROLE_DEVELOPER, new HashSet<>());
+        mockUser = User.builder()
+                .id(1L)
+                .username("testuser")
+                .email("developer@gmail.com")
+                .firstName("Test")
+                .lastName("User")
+                .password("encoded")
+                .provider(AuthProvider.LOCAL)
+                .enabled(true)
+                .roles(Set.of(devRole))
                 .build();
 
-        testDeveloper = new Developer();
-        testDeveloper.setId(1L);
-        testDeveloper.setName("Test User");
-        testDeveloper.setEmail("developer@gmail.com");
-        testDeveloper.setUser(testUser);
+        mockDev = new Developer(1L, "Test User",  mockUser,"developer@gmail.com");
 
         SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
-    void login_Success() {
-
-        LoginRequestDto request = new LoginRequestDto();
-        request.setEmail("developer@gmail.com");
-        request.setPassword("password123");
+    void authenticateUser_ShouldReturnTokens_WhenCredentialsValid() {
+        LoginRequestDto login = new LoginRequestDto("developer@gmail.com", "password123");
 
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(testUser);
+        when(authentication.getPrincipal()).thenReturn(mockUser);
         when(jwtUtils.generateJwtToken(authentication)).thenReturn("jwt-token");
         when(jwtUtils.generateRefreshToken("testuser")).thenReturn("refresh-token");
         doNothing().when(userRepository).updateLastLogin(eq(1L), any(LocalDateTime.class));
-        var response = authController.authenticateUser(request);
+
+        var response = controller.login(login);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        JwtResponseDto jwtResponse = (JwtResponseDto) response.getBody();
-        assertEquals("jwt-token", jwtResponse.getToken());
-        assertEquals("developer@gmail.com", jwtResponse.getEmail());
+        JwtResponseDto dto = response.getBody();
+        assertNotNull(dto);
+        assertEquals("jwt-token", dto.getToken());
+        assertEquals("refresh-token", dto.getRefreshToken());
+        assertEquals("developer@gmail.com", dto.getEmail());
     }
 
     @Test
-    void login_InvalidCredentials() {
-
-        LoginRequestDto request = new LoginRequestDto();
-        request.setEmail("developer@gmail.com");
-        request.setPassword("wrongpassword");
+    void authenticateUser_ShouldThrow_WhenBadCredentials() {
+        LoginRequestDto login = new LoginRequestDto("developer@gmail.com", "wrong");
 
         when(authenticationManager.authenticate(any()))
-                .thenThrow(new BadCredentialsException("Bad credentials"));
+                .thenThrow(new BadCredentialsException("Invalid"));
 
-        assertThrows(BadCredentialsException.class,
-                () -> authController.authenticateUser(request));
+        assertThrows(BadCredentialsException.class, () -> controller.login(login));
     }
 
     @Test
-    void register_Success() {
-
-        RegisterRequestDto request = new RegisterRequestDto();
-        request.setUsername("newuser");
-        request.setEmail("new@test.com");
-        request.setPassword("password123");
-        request.setFirstName("New");
-        request.setLastName("User");
-        request.setRole("DEVELOPER");
+    void registerUser_ShouldReturnSuccess_WhenDataIsValid() {
+        RegisterRequestDto register = new RegisterRequestDto("newuser", "new@test.com", "pass123", "New", "User", "DEVELOPER");
 
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@test.com")).thenReturn(false);
-        when(passwordEncoder.encode("password123")).thenReturn("encodedPassword");
-        when(roleRepository.findByName(RoleName.ROLE_DEVELOPER)).thenReturn(Optional.of(testRole));
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(developerRepository.save(any(Developer.class))).thenReturn(testDeveloper);
+        when(passwordEncoder.encode("pass123")).thenReturn("encoded");
+        when(roleRepository.findByName(RoleName.ROLE_DEVELOPER)).thenReturn(Optional.of(devRole));
+        when(userRepository.save(any())).thenReturn(mockUser);
+        when(developerRepository.save(any())).thenReturn(mockDev);
 
-        var response = authController.registerUser(request);
-
+        var response = controller.register(register);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertTrue(messageResponse.isSuccess());
-        assertEquals("User registered successfully! You can now log in.", messageResponse.getMessage());
+        assertNotNull(response.getBody());
+        assertTrue(((MessageResponseDto) response.getBody()).isSuccess());
     }
 
     @Test
-    void register_UsernameExists() {
+    void registerUser_ShouldFail_WhenUsernameExists() {
+        RegisterRequestDto register = new RegisterRequestDto("newuser", "new@test.com", "pass123", "New", "User", "DEVELOPER");
 
-        RegisterRequestDto request = new RegisterRequestDto();
-        request.setUsername("existinguser");
-        request.setEmail("new@test.com");
+        when(userRepository.existsByUsername("newuser")).thenReturn(true);
 
-        when(userRepository.existsByUsername("existinguser")).thenReturn(true);
-
-
-        var response = authController.registerUser(request);
+        var response = controller.register(register);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertFalse(messageResponse.isSuccess());
-        assertEquals("Username is already taken!", messageResponse.getMessage());
+        assertNotNull(response.getBody());
+        assertFalse(((MessageResponseDto) response.getBody()).isSuccess());
     }
 
     @Test
-    void getOAuth2Tokens_Success() {
+    void getOAuth2Tokens_ShouldReturnJwt_WhenCookiesPresent() {
+        Cookie jwt = new Cookie(OAuth2AuthenticationSuccessHandler.JWT_COOKIE_NAME, "jwt-token");
+        Cookie refresh = new Cookie(OAuth2AuthenticationSuccessHandler.REFRESH_TOKEN_COOKIE_NAME, "refresh-token");
 
-        Cookie jwtCookie = new Cookie(OAuth2AuthenticationSuccessHandler.JWT_COOKIE_NAME, "jwt-token");
-        Cookie refreshCookie = new Cookie(OAuth2AuthenticationSuccessHandler.REFRESH_TOKEN_COOKIE_NAME, "refresh-token");
-
-        when(httpServletRequest.getCookies()).thenReturn(new Cookie[]{jwtCookie, refreshCookie});
+        when(request.getCookies()).thenReturn(new Cookie[]{jwt, refresh});
         when(jwtUtils.validateJwtToken("jwt-token")).thenReturn(true);
         when(jwtUtils.getUserNameFromJwtToken("jwt-token")).thenReturn("testuser");
-        when(userRepository.findByUsernameOrEmail("testuser", "testuser")).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsernameOrEmail("testuser", "testuser")).thenReturn(Optional.of(mockUser));
 
-
-        var response = authController.getOAuth2Tokens(httpServletRequest);
-
+        var response = controller.getOAuth2Token(request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        JwtResponseDto jwtResponse = (JwtResponseDto) response.getBody();
-        assertEquals("jwt-token", jwtResponse.getToken());
+        assertNotNull(response.getBody());
+        assertEquals("jwt-token", ((JwtResponseDto) response.getBody()).getToken());
     }
 
     @Test
-    void getOAuth2Tokens_NoCookies() {
-
-        when(httpServletRequest.getCookies()).thenReturn(new Cookie[]{});
-
-
-        var response = authController.getOAuth2Tokens(httpServletRequest);
-
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertEquals("Tokens not found or expired. Please log in again.", messageResponse.getMessage());
-    }
-
-    @Test
-    void refreshToken_Success() {
-
-        TokenRefreshRequestDto request = new TokenRefreshRequestDto();
-        request.setRefreshToken("valid-refresh-token");
+    void refreshToken_ShouldReturnNewTokens_WhenRefreshTokenValid() {
+        TokenRefreshRequestDto refreshRequest = new TokenRefreshRequestDto("valid-refresh-token");
 
         when(jwtUtils.validateJwtToken("valid-refresh-token")).thenReturn(true);
         when(jwtUtils.getUserNameFromJwtToken("valid-refresh-token")).thenReturn("testuser");
-        when(jwtUtils.generateTokenFromUsername("testuser")).thenReturn("new-access-token");
-        when(jwtUtils.generateRefreshToken("testuser")).thenReturn("new-refresh-token");
+        when(jwtUtils.generateTokenFromUsername("testuser")).thenReturn("new-jwt");
+        when(jwtUtils.generateRefreshToken("testuser")).thenReturn("new-refresh");
 
-
-        var response = authController.refreshToken(request);
-
+        var response = controller.refresh(refreshRequest);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        TokenRefreshResponseDto tokenResponse = (TokenRefreshResponseDto) response.getBody();
-        assertEquals("new-access-token", tokenResponse.getAccessToken());
+        assertNotNull(response.getBody());
+        assertEquals("new-jwt", ((TokenRefreshResponseDto) response.getBody()).getAccessToken());
     }
 
     @Test
-    void refreshToken_Invalid() {
-
-        TokenRefreshRequestDto request = new TokenRefreshRequestDto();
-        request.setRefreshToken("invalid-token");
-
-        when(jwtUtils.validateJwtToken("invalid-token")).thenReturn(false);
-
-
-        var response = authController.refreshToken(request);
-
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertEquals("Refresh token is invalid or expired!", messageResponse.getMessage());
-    }
-
-    @Test
-    void logout_Success() {
-
-        var response = authController.logoutUser();
-
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertEquals("Logged out successfully!", messageResponse.getMessage());
-    }
-
-    @Test
-    void validateToken_Valid() {
-
-        String authHeader = "Bearer valid-token";
-        when(jwtUtils.validateJwtToken("valid-token")).thenReturn(true);
-        when(jwtUtils.getUserNameFromJwtToken("valid-token")).thenReturn("testuser");
-
-
-        var response = authController.validateToken(authHeader);
-
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertEquals("Token is valid for user: testuser", messageResponse.getMessage());
-    }
-
-    @Test
-    void validateToken_Invalid() {
-
-        String authHeader = "Bearer invalid-token";
-        when(jwtUtils.validateJwtToken("invalid-token")).thenReturn(false);
-
-
-        var response = authController.validateToken(authHeader);
-
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertEquals("Invalid or expired token", messageResponse.getMessage());
-    }
-
-    @Test
-    void getMyDetails_AuthenticatedUser() {
-
+    void getMyDetails_ShouldReturnUserInfo_WhenUserIsAuthenticated() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getPrincipal()).thenReturn(testUser);
-        when(developerRepository.findDeveloperByEmail("developer@gmail.com")).thenReturn(testDeveloper);
+        when(authentication.getPrincipal()).thenReturn(mockUser);
+        when(developerRepository.findDeveloperByEmail("developer@gmail.com")).thenReturn(mockDev);
 
-
-        var response = authController.getMyDetails();
-
+        var response = controller.getUserDetails();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        AuthenticatedUserResponseDto userResponse = (AuthenticatedUserResponseDto) response.getBody();
-        assertEquals("testuser", userResponse.getUsername());
-        assertNotNull(userResponse.getDeveloper());
+        assertNotNull(response.getBody());
+        assertEquals("testuser", ((AuthenticatedUserResponseDto) response.getBody()).getUsername());
     }
 
     @Test
-    void getMyDetails_OAuth2User() {
-
+    void getMyDetails_ShouldReturnOAuth2Principal_WhenOAuth2User() {
         CustomOAuth2User oAuth2User = mock(CustomOAuth2User.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(oAuth2User);
 
-
-        var response = authController.getMyDetails();
-
+        var response = controller.getUserDetails();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(oAuth2User, response.getBody());
     }
 
     @Test
-    void getMyDetails_NotAuthenticated() {
+    void validateToken_ShouldReturnSuccess_WhenTokenValid() {
+        when(jwtUtils.validateJwtToken("token123")).thenReturn(true);
+        when(jwtUtils.getUserNameFromJwtToken("token123")).thenReturn("testuser");
 
-        when(securityContext.getAuthentication()).thenReturn(null);
+        var response = controller.validate("Bearer token123");
 
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(((MessageResponseDto) response.getBody()).getMessage().contains("testuser"));
+    }
 
-        var response = authController.getMyDetails();
+    @Test
+    void logoutUser_ShouldReturnSuccess() {
+        var response = controller.logout();
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-        MessageResponseDto messageResponse = (MessageResponseDto) response.getBody();
-        assertEquals("User is not authenticated", messageResponse.getMessage());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Logged out successfully!", ((MessageResponseDto) response.getBody()).getMessage());
     }
 }

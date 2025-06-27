@@ -3,6 +3,7 @@ package lii.buildmaster.projecttracker.controller.v1;
 import jakarta.validation.Valid;
 import lii.buildmaster.projecttracker.model.dto.request.UserRoleUpdateRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.UserResponseDto;
+import lii.buildmaster.projecttracker.model.enums.RoleName;
 import lii.buildmaster.projecttracker.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -54,7 +55,7 @@ public class AdminControllerV1 {
 
     @GetMapping("/users/role/{roleName}")
     public ResponseEntity<Page<UserResponseDto>> getUsersByRole(
-            @PathVariable String roleName,
+            @PathVariable RoleName roleName,
             Pageable pageable) {
         return ResponseEntity.ok(adminService.getUsersByRole(roleName, pageable));
     }
@@ -64,25 +65,17 @@ public class AdminControllerV1 {
         return ResponseEntity.ok(adminService.getSystemStatistics());
     }
 
-    @GetMapping("/audit-logs")
-    public ResponseEntity<Page<?>> getAuditLogs(
-            @RequestParam(required = false) String entityType,
-            @RequestParam(required = false) String action,
-            Pageable pageable) {
-        return ResponseEntity.ok(adminService.getAuditLogs(entityType, action, pageable));
-    }
-
-
     @PostMapping("/users/{id}/approve-contractor")
     public ResponseEntity<UserResponseDto> approveContractor(
-            @PathVariable Long id,
-            @RequestParam String newRole) {
-        return ResponseEntity.ok(adminService.approveContractor(id, newRole));
+            @PathVariable Long id) {
+        return ResponseEntity.ok(adminService.approveContractor(id));
     }
 
     @PostMapping("/users/{id}/reset-password")
     public ResponseEntity<Map<String, String>> resetUserPassword(@PathVariable Long id) {
         String tempPassword = adminService.resetUserPassword(id);
+
+        // In real applications, I will send the temp password to the user via email or other secure means.
         return ResponseEntity.ok(Map.of(
                 "message", "Password reset successful",
                 "tempPassword", tempPassword
