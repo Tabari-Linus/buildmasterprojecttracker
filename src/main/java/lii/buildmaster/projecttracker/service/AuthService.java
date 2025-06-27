@@ -28,6 +28,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // Added for explicit transaction management if needed
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -123,6 +124,7 @@ public class AuthService {
         SecurityContextHolder.clearContext();
     }
 
+    @Transactional(readOnly = true) // Added transactional context to ensure lazy loaded developer is available if needed
     public AuthenticatedUserResponseDto getAuthenticatedUserDetails() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -131,29 +133,39 @@ public class AuthService {
 
         Object principal = auth.getPrincipal();
         if (principal instanceof User user) {
+            // Re-fetch the user from the repository with developer eagerly loaded.
+            // This avoids LazyInitializationException if the 'user' object from principal is detached
+            // or doesn't have the developer eagerly loaded (Spring Security's principal might not).
+            User fetchedUser = userRepository.findByUsernameWithDeveloper(user.getUsername()) // This method now has @Query
+                    .orElseThrow(() -> new RuntimeException("User not found after authentication"));
+
             DeveloperResponseDto devDto = new DeveloperResponseDto();
 
-            boolean isDeveloper = user.getRoles().stream()
+            // Use fetchedUser to check roles and developer
+            boolean isDeveloper = fetchedUser.getRoles().stream()
                     .anyMatch(role -> role.getName() == RoleName.ROLE_DEVELOPER);
 
             if (isDeveloper) {
-                Developer dev = developerService.getDeveloperByEmail(user.getEmail());
-                System.out.println("Developer Entity: " + dev);
+                // If developer is already fetched via EntityGraph, it's accessible directly
+                // If not, developerService.getDeveloperByEmail will perform another query.
+                // The findByUsernameWithDeveloper above should fetch it directly.
+                Developer dev = fetchedUser.getDeveloper();
+                System.out.println("Developer Entity: " + dev); // Good for debugging
                 if (dev == null) {
-                    throw new RuntimeException("Developer not found for user: " + user.getEmail());
+                    throw new RuntimeException("Developer not found for user: " + fetchedUser.getEmail());
                 }
 
                 devDto = developerMapper.toResponseDto(dev);
             }
 
             return new AuthenticatedUserResponseDto(
-                    user.getId(), user.getUsername(), user.getEmail(), devDto
+                    fetchedUser.getId(), fetchedUser.getUsername(), fetchedUser.getEmail(), devDto
             );
         }
         throw new RuntimeException("Unexpected user principal type");
     }
 
-
+    @Transactional(readOnly = true) // Added transactional context
     public JwtResponseDto getOAuth2TokensFromCookies(HttpServletRequest request) {
         String jwt = CookieUtils.getCookie(request, OAuth2AuthenticationSuccessHandler.JWT_COOKIE_NAME)
                 .map(Cookie::getValue).orElseThrow();
@@ -165,8 +177,9 @@ public class AuthService {
         }
 
         String username = jwtUtils.getUserNameFromJwtToken(jwt);
-        User user = userRepository.findByUsernameOrEmail(username, username)
-                .orElseThrow();
+        // Use the new EntityGraph-enabled method to fetch user with developer
+        User user = userRepository.findUserWithDeveloperByUsernameOrEmail(username, username) // Renamed method and has @Query
+                .orElseThrow(() -> new RuntimeException("User not found for token validation"));
 
         return new JwtResponseDto(jwt, refresh, user.getId(), user.getUsername(), user.getEmail(),
                 user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList());

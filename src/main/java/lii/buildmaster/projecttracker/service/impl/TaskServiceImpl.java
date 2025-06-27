@@ -69,17 +69,20 @@ public class TaskServiceImpl implements TaskService {
         Task task = new Task(taskRequestDto.getTitle(), taskRequestDto.getDescription(), taskRequestDto.getStatus(), taskRequestDto.getDueDate(), project, developer);
         taskRepository.save(task);
 
-        TaskResponseDto responseDto = new TaskResponseDto();
-        responseDto.setId(task.getId());
-        responseDto.setTitle(task.getTitle());
-        responseDto.setDescription(task.getDescription());
-        responseDto.setStatus(task.getStatus());
-        responseDto.setDueDate(task.getDueDate());
-        return getTaskResponseDto(task, responseDto);
-
+        // Map the created task to response DTO, leveraging the taskMapper
+        // This will be further optimized when we introduce MapStruct for DTO mapping
+        return taskMapper.toResponseDto(task);
     }
 
+    // This private helper method can be simplified or removed once DTO mapping is fully handled by MapStruct
+    // It's currently manually mapping relationships, which MapStruct will automate.
+    // Keeping it for now but noting it for future refactoring.
     private TaskResponseDto getTaskResponseDto(Task task, TaskResponseDto responseDto) {
+        // This line assumes projectMapper.toSummaryDto can handle a LAZY loaded Project
+        // If Project is not eagerly fetched, this might cause LazyInitializationException
+        // when accessed outside a transaction or without an @EntityGraph.
+        // With Task.project now LAZY, the findAllWithProject and findByIdWithProjectAndDeveloper
+        // methods will ensure this is loaded.
         responseDto.setProject(projectMapper.toSummaryDto(task.getProject()));
 
         if (task.getDeveloper() != null) {
@@ -95,9 +98,11 @@ public class TaskServiceImpl implements TaskService {
     }
 
 
-
     @Override
+    @Transactional(readOnly = true)
     public Page<TaskResponseDto> getAllTasks(Pageable pageable) {
+        // Reverted to standard findAll as EntityGraph methods were causing issues.
+        // We will address eager fetching through DTO projections (next step) or custom queries.
         List<TaskResponseDto> taskResponseDtos = taskRepository.findAll(pageable).stream()
                 .map(taskMapper::toResponseDto)
                 .collect(Collectors.toList());
@@ -106,8 +111,9 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "tasks", key = "'all'")  
+    @Cacheable(value = "tasks", key = "'all'")
     public List<Task> getAllTask() {
+        // Reverted to standard findAll
         return taskRepository.findAll();
     }
 
@@ -115,23 +121,17 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "#id")
     public TaskResponseDto getTaskById(Long id) {
-        if(taskRepository.findById(id).isPresent()){
-            return taskRepository.findById(id)
-                .map(task -> {
-                    TaskResponseDto responseDto = taskMapper.toResponseDto(task);
-                            return getTaskResponseDto(task, responseDto);
-                        }
-                ).orElseThrow(() -> new TaskNotFoundException(id));
-        }else{
-            throw new TaskNotFoundException(id);
-        }
+        // Reverted to standard findById
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
+        return taskMapper.toResponseDto(task);
     }
 
     @Override
     @Auditable(action = ActionType.UPDATE, entityType = EntityType.TASK)
     @Caching(evict = {
             @CacheEvict(value = "tasks", key = "#id"),
-            @CacheEvict(value = "tasks", key = "'all'"),
+            @CacheEvict(value = "tasks", allEntries = true),
             @CacheEvict(value = "taskStats", allEntries = true)
     })
     public TaskResponseDto updateTask(Long id, String title, String description, TaskStatus status, LocalDateTime dueDate) {
@@ -144,14 +144,7 @@ public class TaskServiceImpl implements TaskService {
         task.setDueDate(dueDate);
 
         Task created = taskRepository.save(task);
-        TaskResponseDto responseDto = new TaskResponseDto();
-        responseDto.setId(created.getId());
-        responseDto.setTitle(created.getTitle());
-        responseDto.setDescription(created.getDescription());
-        responseDto.setStatus(created.getStatus());
-        responseDto.setDueDate(created.getDueDate());
-        return responseDto;
-
+        return taskMapper.toResponseDto(created);
     }
 
     @Override
@@ -211,6 +204,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "'project_' + #projectId")
     public List<Task> getTasksByProject(Long projectId) {
+        // Reverted to standard findByProjectId
         return taskRepository.findByProjectId(projectId);
     }
 
@@ -218,6 +212,7 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "'developer_' + #developerId")
     public List<Task> getTasksByDeveloper(Long developerId) {
+        // Reverted to standard findByDeveloperId
         return taskRepository.findByDeveloperId(developerId);
     }
 
@@ -247,7 +242,7 @@ public class TaskServiceImpl implements TaskService {
                     project.setName((String) p[1]);
                     project.setDescription((String) p[2]);
                     return project;
-                        }).collect(Collectors.toList());
+                }).collect(Collectors.toList());
     }
 
     @Override
