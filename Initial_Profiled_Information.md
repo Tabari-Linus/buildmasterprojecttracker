@@ -1,154 +1,91 @@
-# Performance Profiling Data Collection Checklist
+# Performance Profiling Report
 
-## Pre-Test Setup
-- [ ] Application started with profiling configuration
-- [ ] Database populated with sample data
-- [ ] JMeter test plan configured
-- [ ] Profiler (VisualVM) connected
-- [ ] Actuator endpoints accessible at http://localhost:8080/actuator
+## Overview
 
-## JMeter Load Test Metrics to Collect
+This document summarizes the initial performance profiling conducted on the application, focusing on critical bottlenecks, memory usage patterns, response times, and specific issues identified from the provided `Initial aggregate.csv` data and subsequent analysis of VisualVM and Heap Dump data. I can be found in /docs.
 
-### Test Configuration
-- **Thread Count**: 100 users
-- **Ramp-up Period**: 60 seconds
-- **Test Duration**: 300 seconds (5 minutes)
-- **Loop Count**: 10 per user
+## 🚨 Executive Summary
 
-### Metrics to Record
-- [ ] **Response Times**
-    - [ ] Average response time per endpoint
-    - [ ] 90th percentile response time
-    - [ ] 95th percentile response time
-    - [ ] 99th percentile response time
-    - [ ] Min/Max response times
+The application is experiencing **severe performance issues** with core API endpoints exhibiting response times averaging **15-20 seconds**. This represents a critical bottleneck that significantly impacts user experience and system throughput.
 
-- [ ] **Throughput**
-    - [ ] Requests per second (RPS)
-    - [ ] Transactions per second (TPS)
-    - [ ] Bytes per second
+## 📊 Key Findings
 
-- [ ] **Error Rates**
-    - [ ] HTTP error percentages
-    - [ ] Failed requests count
-    - [ ] Error types and messages
+### Primary Bottlenecks Identified
 
-### Endpoint-Specific Metrics
-- [ ] **GET /api/v1/projects**
-    - Average response time: _____ ms
-    - 95th percentile: _____ ms
-    - Throughput: _____ RPS
-    - Error rate: _____ %
+Based on the `Initial aggregate.csv` data analysis, three API endpoints have been identified as critical performance bottlenecks:
 
-- [ ] **GET /api/v1/tasks**
-    - Average response time: _____ ms
-    - 95th percentile: _____ ms
-    - Throughput: _____ RPS
-    - Error rate: _____ %
+#### **GET /api/v1/projects**
+- **Average Response Time**: 15.9 seconds (15,926ms)
+- **99th Percentile**: 25.7 seconds (25,756ms)
+- **Throughput**: ~8-9 requests/second
+- **Impact**: High - Core functionality severely impacted
 
-- [ ] **POST /api/v1/tasks**
-    - Average response time: _____ ms
-    - 95th percentile: _____ ms
-    - Throughput: _____ RPS
-    - Error rate: _____ %
+#### **GET /api/v1/tasks**
+- **Average Response Time**: 18.1 seconds (18,166ms)
+- **99th Percentile**: 27.1 seconds (27,162ms)
+- **Throughput**: ~8-9 requests/second
+- **Impact**: High - Task retrieval operations critically slow
 
-## JVM & Memory Profiling
+#### **POST /api/v1/tasks**
+- **Average Response Time**: 19.9 seconds (19,910ms)
+- **99th Percentile**: 27.0 seconds (27,077ms)
+- **Throughput**: ~8-9 requests/second
+- **Impact**: High - Task creation severely delayed
 
-### Heap Memory Analysis
-- [ ] **Initial heap usage**: _____ MB
-- [ ] **Peak heap usage**: _____ MB
-- [ ] **Heap utilization at end**: _____ MB
-- [ ] **Object allocation rate**: _____ MB/sec
-- [ ] **Memory leaks detected**: Yes/No
+## 📈 Detailed Performance Metrics
 
-### Garbage Collection Analysis
-- [ ] **GC Algorithm**: G1GC
-- [ ] **Total GC time**: _____ ms
-- [ ] **GC frequency**: _____ times during test
-- [ ] **Average GC pause time**: _____ ms
-- [ ] **Max GC pause time**: _____ ms
-- [ ] **Young generation collections**: _____
-- [ ] **Old generation collections**: _____
+### Response Time Analysis
 
-### Thread Analysis
-- [ ] **Peak thread count**: _____
-- [ ] **Active threads during load**: _____
-- [ ] **Thread pools utilization**: _____ %
-- [ ] **Deadlocks detected**: Yes/No
-- [ ] **Thread contention issues**: Yes/No
+| Endpoint | Average (ms) | Median (ms) | 90% (ms) | 95% (ms) | 99% (ms) | Min (ms) | Max (ms) |
+|----------|--------------|-------------|----------|----------|----------|----------|----------|
+| **Login** | 124 | 124 | 124 | 124 | 124 | 124 | 124 |
+| **GET /api/v1/projects** | 15,926 | 17,261 | 22,592 | 24,052 | 25,756 | 5 | 27,472 |
+| **GET /api/v1/tasks** | 18,166 | 19,723 | 23,743 | 25,706 | 27,162 | 29 | 31,898 |
+| **POST /api/v1/tasks** | 19,910 | 21,007 | 25,746 | 26,097 | 27,077 | 76 | 31,765 |
+| **OVERALL** | 17,931 | 19,767 | 23,682 | 25,767 | 26,900 | 5 | 31,898 |
 
-### CPU Profiling
-- [ ] **Average CPU utilization**: _____ %
-- [ ] **Peak CPU utilization**: _____ %
-- [ ] **Hot methods identified**:
-    - Method 1: _____ (_____ % CPU time)
-    - Method 2: _____ (_____ % CPU time)
-    - Method 3: _____ (_____ % CPU time)
+### Key Observations
 
-## Database Performance
-- [ ] **Database connection pool**:
-    - Active connections: _____
-    - Max pool size: _____
-    - Connection wait time: _____ ms
+- **Login Performance**: Excellent performance with consistent 124ms response times
+- **Core Endpoints**: Catastrophic performance with 15-20 second average response times
+- **Variance**: High variability in response times (min: 5ms, max: 31,898ms)
+- **System Average**: 17.9 seconds overall average response time
 
-- [ ] **Query performance**:
-    - Slowest queries identified: _____
-    - Average query execution time: _____ ms
+## 🧠 Memory Usage Patterns
 
-## Spring Boot Actuator Metrics
+Analysis of the VisualVM and Heap Dump data.
+> - `VisualVM after 5 minutes.png`
+> - `Heap Dump after 5 minutes.hprof`
+> - `Heap Dump after 5 minutes.png`
+### VisualVM Analysis
+![VisualVM Analysis](docs/images/VisualVM%20after%205%20minutes.png)
+![Heap Dump Analysis](docs/images/Heap%20Dump%20after%205%20minutes.png)
 
-### Before Load Test
-- [ ] **JVM Memory** (GET /actuator/metrics/jvm.memory.used):
-    - Heap: _____ bytes
-    - Non-heap: _____ bytes
 
-- [ ] **HTTP Requests** (GET /actuator/metrics/http.server.requests):
-    - Total requests: _____
-    - Average duration: _____ seconds
+**Analysis needed for**:
+- Memory leak detection
+- Object accumulation patterns
+- Garbage collection behavior
+- Heap utilization trends
 
-### After Load Test
-- [ ] **JVM Memory**:
-    - Heap: _____ bytes
-    - Non-heap: _____ bytes
+## 🔍 Critical Issues Identified
 
-- [ ] **HTTP Requests**:
-    - Total requests: _____
-    - Average duration: _____ seconds
+### 1. Severe Response Time Degradation
+The core API endpoints are experiencing response times that are **orders of magnitude higher** than acceptable performance standards:
+- Industry standard: < 200ms for API responses
+- Current performance: 15,000-20,000ms average
+- **Performance Gap**: 75-100x slower than target
 
-- [ ] **Cache Metrics** (if applicable):
-    - Cache hit ratio: _____ %
-    - Cache miss count: _____
+### 2. Low System Throughput
+- Current throughput: 8-9 requests/second for core endpoints
+- This severely limits concurrent user capacity
 
-## Issues Identified
+### 3. Potential Root Causes
+Based on the performance profile, likely causes include:
+- **Database Performance**: Inefficient queries or missing indexes
+- **N+1 Query Problems**: Multiple database calls per request
+- **Resource Contention**: Blocking operations or insufficient connection pooling
+- **Memory Issues**: Potential memory leaks affecting performance
+- **Infrastructure Bottlenecks**: CPU, I/O, or network constraints
 
-### Performance Bottlenecks
-- [ ] **Database queries**: _____
-- [ ] **N+1 query problems**: _____
-- [ ] **Excessive object creation**: _____
-- [ ] **Inefficient algorithms**: _____
-- [ ] **Cache misses**: _____
-
-### Memory Issues
-- [ ] **Memory leaks**: _____
-- [ ] **Large object allocations**: _____
-- [ ] **String concatenation**: _____
-- [ ] **Collection growth**: _____
-
-### Threading Issues
-- [ ] **Thread pool exhaustion**: _____
-- [ ] **Synchronization bottlenecks**: _____
-- [ ] **Context switching**: _____
-
-## Screenshots/Exports to Capture
-- [ ] JMeter Summary Report
-- [ ] JMeter Response Time Graph
-- [ ] JProfiler/VisualVM Memory Timeline
-- [ ] JProfiler/VisualVM CPU Profiling Results
-- [ ] GC Log Analysis
-- [ ] Thread Dump (if issues found)
-- [ ] Heap Dump (if memory issues found)
-
-## Additional Notes
-_______________________________________________
-_______________________________________________
-_______________________________________________
+**Status**: Initial Analysis - Requires Memory Analysis Completion
