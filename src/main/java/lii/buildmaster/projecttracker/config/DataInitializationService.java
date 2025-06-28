@@ -1,8 +1,11 @@
 package lii.buildmaster.projecttracker.config;
 
+import lii.buildmaster.projecttracker.mapper.ProjectMapper;
 import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.request.TaskRequestDto;
+import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
+import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Role;
 import lii.buildmaster.projecttracker.model.entity.User;
 import lii.buildmaster.projecttracker.model.enums.AuthProvider;
@@ -11,6 +14,7 @@ import lii.buildmaster.projecttracker.model.enums.RoleName;
 import lii.buildmaster.projecttracker.model.enums.TaskStatus;
 import lii.buildmaster.projecttracker.repository.jpa.DeveloperRepository;
 import lii.buildmaster.projecttracker.repository.jpa.RoleRepository;
+import lii.buildmaster.projecttracker.repository.jpa.TaskRepository;
 import lii.buildmaster.projecttracker.repository.jpa.UserRepository;
 import lii.buildmaster.projecttracker.service.DeveloperService;
 import lii.buildmaster.projecttracker.service.ProjectService;
@@ -37,6 +41,8 @@ public class DataInitializationService {
     private final ProjectService projectService;
     private final DeveloperService developerService;
     private final TaskService taskService;
+
+    private final ProjectMapper projectMapper;
 
     public void initialize() {
         createRoles();
@@ -72,8 +78,6 @@ public class DataInitializationService {
             createDeveloper(dev2Dto, developerUser2);
         }
 
-
-
         var dev2 = developerRepository.findDeveloperByEmail("david.mawuli@buildmaster.com");
 
         createTask("User Authentication Module", "Implement user authentication with JWT and OAuth2", TaskStatus.TODO, 10, project1.getId(), dev1.getId());
@@ -96,13 +100,14 @@ public class DataInitializationService {
         });
     }
 
-    private lii.buildmaster.projecttracker.model.entity.Project createProject(String name, String description, int monthsToAdd, ProjectStatus status) {
-        return projectService.createProject(
+    private Project createProject(String name, String description, int monthsToAdd, ProjectStatus status) {
+        ProjectResponseDto responseDto = projectService.createProject(
                 name,
                 description,
                 LocalDateTime.now().plusMonths(monthsToAdd),
                 status
         );
+        return projectMapper.toEntityFromResponseDto(responseDto);
     }
 
     private void createDeveloper(DeveloperRequestDto dto, User user) {
