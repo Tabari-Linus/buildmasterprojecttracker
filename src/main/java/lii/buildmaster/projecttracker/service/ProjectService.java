@@ -17,7 +17,7 @@ public interface ProjectService {
 
     ProjectResponseDto getProjectById(Long id);
 
-    Page<ProjectResponseDto> getProjectsByStatus(ProjectStatus status, Pageable pageable);
+    Page<ProjectSummaryDto> getProjectsByStatus(ProjectStatus status, Pageable pageable);
 
     Project updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status);
 
