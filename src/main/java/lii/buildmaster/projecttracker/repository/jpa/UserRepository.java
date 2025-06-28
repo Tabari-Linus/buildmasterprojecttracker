@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.jpa.repository.EntityGraph; // IMPORTANT: Add this import
+import org.springframework.data.jpa.repository.EntityGraph;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -24,14 +24,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findByRolesName(RoleName roles_name, Pageable pageable);
 
-    // Existing findByUsername and findByEmail (can coexist with EntityGraph versions)
+
     Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);
 
     Boolean existsByUsername(String username);
     Boolean existsByEmail(String email);
 
-    // This method will be replaced by the @EntityGraph version in AuthService
+
     Optional<User> findByUsernameOrEmail(String username, String email);
 
     @Query("SELECT u FROM User u JOIN FETCH u.roles WHERE u.username = :username")
@@ -53,21 +53,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByEnabled(boolean b);
 
-    // --- NEW METHODS WITH @EntityGraph ---
 
-    // Explicit @Query to prevent Spring Data JPA from misinterpreting "WithDeveloper" as a property.
+
+
     @EntityGraph(attributePaths = {"developer"})
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdWithDeveloper(@Param("id") Long id);
 
-    // Explicit @Query to prevent Spring Data JPA from misinterpreting "WithDeveloper" as a property.
-    // This allows us to use @EntityGraph for eager fetching of the 'developer' association.
+
+
     @EntityGraph(attributePaths = {"developer"})
     @Query("SELECT u FROM User u WHERE u.username = :username")
     Optional<User> findByUsernameWithDeveloper(@Param("username") String username);
 
-    // Explicit @Query to prevent Spring Data JPA from misinterpreting "WithDeveloper" as a property.
-    // This allows us to use @EntityGraph for eager fetching of the 'developer' association.
+
+
     @EntityGraph(attributePaths = {"developer"})
     @Query("SELECT u FROM User u WHERE u.username = :username OR u.email = :email")
     Optional<User> findUserWithDeveloperByUsernameOrEmail(@Param("username") String username, @Param("email") String email);
