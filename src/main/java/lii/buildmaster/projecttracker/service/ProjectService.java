@@ -23,7 +23,7 @@ public interface ProjectService {
 
     void deleteProject(Long id);
 
-    List<Project> getOverdueProjects();
+    List<ProjectSummaryDto> getOverdueProjects();
 
     long getProjectCountByStatus(ProjectStatus status);
 
