@@ -43,4 +43,6 @@ public interface ProjectMapper {
 
     ProjectSummaryDto toSummaryDto(ProjectResponseDto dto);
 
+    @Mapping(target = "tasks", ignore = true)
+    Project toEntityFromResponseDto(ProjectResponseDto dto);
 }
