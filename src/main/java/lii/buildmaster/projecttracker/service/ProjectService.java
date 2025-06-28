@@ -1,7 +1,7 @@
 package lii.buildmaster.projecttracker.service;
 
 import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
-import lii.buildmaster.projecttracker.model.entity.Project;
+import lii.buildmaster.projecttracker.model.dto.summary.ProjectSummaryDto;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
