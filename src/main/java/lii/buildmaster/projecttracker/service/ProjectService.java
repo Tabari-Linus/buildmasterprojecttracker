@@ -13,7 +13,7 @@ public interface ProjectService {
 
     Project createProject(String name, String description, LocalDateTime deadline, ProjectStatus status);
 
-    Page<Project> getAllProjects(Pageable pageable);
+    Page<ProjectSummaryDto> getAllProjects(Pageable pageable);
 
     ProjectResponseDto getProjectById(Long id);
 
