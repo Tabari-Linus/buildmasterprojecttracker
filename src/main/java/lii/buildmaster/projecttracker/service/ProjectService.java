@@ -27,7 +27,9 @@ public interface ProjectService {
 
     long getProjectCountByStatus(ProjectStatus status);
 
-    List<Project> searchProjectsByName(String name);
+    List<ProjectSummaryDto> searchProjectsByName(String name);
+
+    ProjectResponseDto markAsCompleted(Long id);
 
     Project markAsCompleted(Long id);
 }
