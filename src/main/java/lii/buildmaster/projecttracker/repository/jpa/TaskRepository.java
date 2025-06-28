@@ -51,9 +51,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     long countByDeveloperIdAndStatus(Long id, TaskStatus taskStatus);
 
-    // @EntityGraph(attributePaths = {"project", "developer"})
-    // @Query("SELECT t FROM Task t WHERE t.id = :id")
-    // Optional<Task> findByIdWithProjectAndDeveloper(@Param("id") Long id);
+    long countByDeveloperIdAndStatusIn(Long id, Set<TaskStatus> todo);
 
     // @EntityGraph(attributePaths = {"developer"})
     // @Query("SELECT t FROM Task t WHERE t.project.id = :projectId")
