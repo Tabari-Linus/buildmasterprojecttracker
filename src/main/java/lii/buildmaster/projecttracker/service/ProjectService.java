@@ -31,5 +31,5 @@ public interface ProjectService {
 
     ProjectResponseDto markAsCompleted(Long id);
 
-    Project markAsCompleted(Long id);
+    Map<ProjectStatus, Long> getProjectCountsByStatus();
 }
