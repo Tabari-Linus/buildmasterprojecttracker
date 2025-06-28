@@ -2,7 +2,7 @@ package lii.buildmaster.projecttracker.service;
 
 import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
-import lii.buildmaster.projecttracker.model.entity.Developer;
+import lii.buildmaster.projecttracker.model.dto.summary.DeveloperSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
