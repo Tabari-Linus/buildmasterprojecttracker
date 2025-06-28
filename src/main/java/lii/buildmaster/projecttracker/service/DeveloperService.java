@@ -13,22 +13,23 @@ public interface DeveloperService {
 
     void createDeveloper(DeveloperRequestDto dto, User user);
 
-
-    Page<Developer> getAllDevelopers(Pageable pageable);
+    Page<DeveloperSummaryDto> getAllDevelopers(Pageable pageable);
 
     DeveloperResponseDto getDeveloperById(Long id);
 
-    Developer getDeveloperByEmail(String email);
+    DeveloperResponseDto getDeveloperByEmail(String email);
 
     DeveloperResponseDto updateDeveloper(Long id, DeveloperRequestDto dto);
 
     void deleteDeveloper(Long id);
 
-    List<Developer> searchDevelopersByName(String name);
+    List<DeveloperSummaryDto> searchDevelopersByName(String name);
 
-    List<Developer> findDevelopersBySkill(String skill);
+    List<DeveloperSummaryDto> findDevelopersBySkill(String skill);
 
     boolean isEmailTaken(String email);
 
     long getTotalDeveloperCount();
+
+    Page<DeveloperSummaryDto> getDevelopersWithActiveTaskCount(Pageable pageable);
 }
