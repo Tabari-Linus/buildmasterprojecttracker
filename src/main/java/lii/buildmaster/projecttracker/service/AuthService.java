@@ -10,6 +10,7 @@ import lii.buildmaster.projecttracker.model.dto.response.AuthenticatedUserRespon
 import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
 import lii.buildmaster.projecttracker.model.dto.response.JwtResponseDto;
 import lii.buildmaster.projecttracker.model.dto.response.MessageResponseDto;
+import lii.buildmaster.projecttracker.model.dto.summary.DeveloperSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Role;
 import lii.buildmaster.projecttracker.model.entity.User;
@@ -28,7 +29,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Added for explicit transaction management if needed
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -83,12 +84,12 @@ public class AuthService {
                 throw new IllegalArgumentException("Skills are required for developers!");
             }
 
-            DeveloperRequestDto developerDto = new DeveloperRequestDto(
-                    request.getFirstName() + " " + request.getLastName(),
-                    request.getEmail(),
-                    request.getSkills(),
-                    request.getPassword()
-            );
+            DeveloperRequestDto developerDto = DeveloperRequestDto.builder()
+                    .name(request.getFirstName() + " " + request.getLastName())
+                    .email(request.getEmail())
+                    .skills(request.getSkills())
+                    .password(request.getPassword())
+                    .build();
             developerService.createDeveloper(developerDto, savedUser);
         }
 
@@ -124,7 +125,7 @@ public class AuthService {
         SecurityContextHolder.clearContext();
     }
 
-    @Transactional(readOnly = true) // Added transactional context to ensure lazy loaded developer is available if needed
+    @Transactional(readOnly = true)
     public AuthenticatedUserResponseDto getAuthenticatedUserDetails() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -133,39 +134,30 @@ public class AuthService {
 
         Object principal = auth.getPrincipal();
         if (principal instanceof User user) {
-            // Re-fetch the user from the repository with developer eagerly loaded.
-            // This avoids LazyInitializationException if the 'user' object from principal is detached
-            // or doesn't have the developer eagerly loaded (Spring Security's principal might not).
-            User fetchedUser = userRepository.findByUsernameWithDeveloper(user.getUsername()) // This method now has @Query
+            User fetchedUser = userRepository.findByUsernameWithDeveloper(user.getUsername())
                     .orElseThrow(() -> new RuntimeException("User not found after authentication"));
 
-            DeveloperResponseDto devDto = new DeveloperResponseDto();
+            DeveloperSummaryDto developerSummaryDto = null;
 
-            // Use fetchedUser to check roles and developer
             boolean isDeveloper = fetchedUser.getRoles().stream()
                     .anyMatch(role -> role.getName() == RoleName.ROLE_DEVELOPER);
 
             if (isDeveloper) {
-                // If developer is already fetched via EntityGraph, it's accessible directly
-                // If not, developerService.getDeveloperByEmail will perform another query.
-                // The findByUsernameWithDeveloper above should fetch it directly.
                 Developer dev = fetchedUser.getDeveloper();
-                System.out.println("Developer Entity: " + dev); // Good for debugging
                 if (dev == null) {
                     throw new RuntimeException("Developer not found for user: " + fetchedUser.getEmail());
                 }
-
-                devDto = developerMapper.toResponseDto(dev);
+                developerSummaryDto = developerMapper.toSummaryDto(dev);
             }
 
             return new AuthenticatedUserResponseDto(
-                    fetchedUser.getId(), fetchedUser.getUsername(), fetchedUser.getEmail(), devDto
+                    fetchedUser.getId(), fetchedUser.getUsername(), fetchedUser.getEmail(), developerSummaryDto
             );
         }
         throw new RuntimeException("Unexpected user principal type");
     }
 
-    @Transactional(readOnly = true) // Added transactional context
+    @Transactional(readOnly = true)
     public JwtResponseDto getOAuth2TokensFromCookies(HttpServletRequest request) {
         String jwt = CookieUtils.getCookie(request, OAuth2AuthenticationSuccessHandler.JWT_COOKIE_NAME)
                 .map(Cookie::getValue).orElseThrow();
@@ -177,8 +169,7 @@ public class AuthService {
         }
 
         String username = jwtUtils.getUserNameFromJwtToken(jwt);
-        // Use the new EntityGraph-enabled method to fetch user with developer
-        User user = userRepository.findUserWithDeveloperByUsernameOrEmail(username, username) // Renamed method and has @Query
+        User user = userRepository.findUserWithDeveloperByUsernameOrEmail(username, username)
                 .orElseThrow(() -> new RuntimeException("User not found for token validation"));
 
         return new JwtResponseDto(jwt, refresh, user.getId(), user.getUsername(), user.getEmail(),
