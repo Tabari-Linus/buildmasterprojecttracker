@@ -6,12 +6,11 @@ import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
 import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
 import lii.buildmaster.projecttracker.model.dto.summary.DeveloperSummaryDto;
-import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.service.DeveloperService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,22 +20,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/developers")
 @Tag(name = "Developers", description = "Developer management operations")
+@RequiredArgsConstructor
 public class DeveloperControllerV1 {
 
     private final DeveloperService developerService;
     private final DeveloperMapper developerMapper;
 
-    public DeveloperControllerV1(DeveloperService developerService, DeveloperMapper developerMapper) {
-        this.developerService = developerService;
-        this.developerMapper = developerMapper;
-    }
-
     @GetMapping
     @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<Page<DeveloperSummaryDto>> getAllDevelopers(
             @PageableDefault(size = 10, sort = "name") Pageable pageable) {
-        return ResponseEntity.ok(developerService.getAllDevelopers(pageable)
-                .map(developerMapper::toSummaryDto));
+
+        return ResponseEntity.ok(developerService.getAllDevelopers(pageable));
     }
 
     @GetMapping("/{id}")
@@ -48,8 +43,9 @@ public class DeveloperControllerV1 {
     @GetMapping("/email")
     @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<DeveloperResponseDto> getDeveloperByEmail(@RequestParam String email) {
-        Developer developer = developerService.getDeveloperByEmail(email);
-        return ResponseEntity.ok(developerMapper.toResponseDto(developer));
+
+        DeveloperResponseDto developerDto = developerService.getDeveloperByEmail(email);
+        return ResponseEntity.ok(developerDto);
     }
 
 
@@ -71,17 +67,17 @@ public class DeveloperControllerV1 {
     @GetMapping("/search")
     @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<List<DeveloperSummaryDto>> searchByName(@RequestParam String name) {
-        return ResponseEntity.ok(developerService.searchDevelopersByName(name).stream()
-                .map(developerMapper::toSummaryDto)
-                .toList());
+
+        List<DeveloperSummaryDto> developerDtos = developerService.searchDevelopersByName(name);
+        return ResponseEntity.ok(developerDtos);
     }
 
     @GetMapping("/skill")
     @PreAuthorize("@security.canViewAllDevelopers()")
     public ResponseEntity<List<DeveloperSummaryDto>> searchBySkill(@RequestParam String skill) {
-        return ResponseEntity.ok(developerService.findDevelopersBySkill(skill).stream()
-                .map(developerMapper::toSummaryDto)
-                .toList());
+
+        List<DeveloperSummaryDto> developerDtos = developerService.findDevelopersBySkill(skill);
+        return ResponseEntity.ok(developerDtos);
     }
 
     @GetMapping("/email-check")
@@ -102,5 +98,13 @@ public class DeveloperControllerV1 {
     public ResponseEntity<?> getTotalDeveloperCount() {
         long count = developerService.getTotalDeveloperCount();
         return ResponseEntity.ok(java.util.Map.of("totalCount", count));
+    }
+
+    @GetMapping("/stats/active-task-count")
+    @PreAuthorize("@security.canViewAllDevelopers()")
+    public ResponseEntity<List<DeveloperSummaryDto>> getDevelopersWithActiveTaskCount(
+            @PageableDefault(size = 10, sort = "activeTaskCount,desc") Pageable pageable) {
+        Page<DeveloperSummaryDto> developersPage = developerService.getDevelopersWithActiveTaskCount(pageable);
+        return ResponseEntity.ok(developersPage.getContent());
     }
 }
