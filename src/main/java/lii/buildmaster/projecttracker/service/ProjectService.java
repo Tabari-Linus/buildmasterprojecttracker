@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface ProjectService {
 
-    Project createProject(String name, String description, LocalDateTime deadline, ProjectStatus status);
+    ProjectResponseDto createProject(String name, String description, LocalDateTime deadline, ProjectStatus status);
 
     Page<ProjectSummaryDto> getAllProjects(Pageable pageable);
 
