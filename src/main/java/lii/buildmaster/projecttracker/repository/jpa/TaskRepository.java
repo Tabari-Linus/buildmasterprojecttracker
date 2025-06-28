@@ -49,12 +49,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT t FROM Task t WHERE t.project.deadline < :currentTime AND t.status != 'DONE'")
     List<Task> findTasksInOverdueProjects(@Param("currentTime") LocalDateTime currentTime);
 
-    // --- REMOVED PROBLEMatic @EntityGraph METHODS FOR NOW ---
-    // Will re-introduce or find alternative eager fetching strategies later if necessary.
-
-    // @EntityGraph(attributePaths = {"project"})
-    // @Query("SELECT t FROM Task t")
-    // List<Task> findAllWithProject();
+    long countByDeveloperIdAndStatus(Long id, TaskStatus taskStatus);
 
     // @EntityGraph(attributePaths = {"project", "developer"})
     // @Query("SELECT t FROM Task t WHERE t.id = :id")
