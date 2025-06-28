@@ -35,4 +35,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("SELECT DISTINCT p FROM Project p JOIN p.tasks t WHERE t.developer.name = :username")
     List<Project> findProjectsByDeveloperUsername(@Param("username") String username, Pageable pageable);
+
+    @Query("SELECT COUNT(p) FROM Project p GROUP BY p.status")
+    List<Object[]> getProjectCountsByStatus();
 }
