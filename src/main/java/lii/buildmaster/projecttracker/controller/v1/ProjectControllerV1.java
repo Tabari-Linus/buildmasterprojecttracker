@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -37,8 +39,8 @@ public class ProjectControllerV1 {
     public ResponseEntity<ApiResponse<Page<ProjectSummaryDto>>> getAllProjects(
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable) {
 
-        Page<Project> projectPage = projectService.getAllProjects(pageable);
-        Page<ProjectSummaryDto> dtoPage = projectPage.map(projectMapper::toSummaryDto);
+
+        Page<ProjectSummaryDto> dtoPage = projectService.getAllProjects(pageable);
 
         return ResponseEntity.ok(new ApiResponse<>(true, dtoPage, "Projects retrieved successfully"));
     }
@@ -56,13 +58,12 @@ public class ProjectControllerV1 {
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     @Operation(summary = "Create a new project")
     public ResponseEntity<ApiResponse<ProjectResponseDto>> createProject(@Valid @RequestBody ProjectRequestDto requestDto) {
-        Project project = projectService.createProject(
+        ProjectResponseDto responseDto = projectService.createProject(
                 requestDto.getName(),
                 requestDto.getDescription(),
                 requestDto.getDeadline(),
                 requestDto.getStatus()
         );
-        ProjectResponseDto responseDto = projectMapper.toResponseDto(project);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, responseDto, "Project created successfully"));
     }
@@ -74,16 +75,14 @@ public class ProjectControllerV1 {
             @PathVariable Long id,
             @Valid @RequestBody ProjectRequestDto requestDto) {
 
-        Project updatedProject = projectService.updateProject(
+        ProjectResponseDto updatedProjectDto = projectService.updateProject(
                 id,
                 requestDto.getName(),
                 requestDto.getDescription(),
                 requestDto.getDeadline(),
                 requestDto.getStatus()
         );
-
-        ProjectResponseDto responseDto = projectMapper.toResponseDto(updatedProject);
-        return ResponseEntity.ok(new ApiResponse<>(true, responseDto, "Project updated successfully"));
+        return ResponseEntity.ok(new ApiResponse<>(true, updatedProjectDto, "Project updated successfully"));
     }
 
     @DeleteMapping("/{id}")
@@ -97,24 +96,19 @@ public class ProjectControllerV1 {
     @GetMapping("/filter")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     @Operation(summary = "Filter projects by status")
-    public ResponseEntity<ApiResponse<List<ProjectSummaryDto>>> getProjectsByStatus(
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
-            @RequestParam ProjectStatus status) {
+    public ResponseEntity<ApiResponse<Page<ProjectSummaryDto>>> getProjectsByStatus(
+                                                                                     @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
+                                                                                     @RequestParam ProjectStatus status) {
 
-        Page<ProjectResponseDto> projects = projectService.getProjectsByStatus(status, pageable);
-        List<ProjectSummaryDto> projectDtos = projects.map(projectMapper::toSummaryDto).getContent();
-
-        return ResponseEntity.ok(new ApiResponse<>(true, projectDtos, "Projects filtered by status"));
+        Page<ProjectSummaryDto> projects = projectService.getProjectsByStatus(status, pageable);
+        return ResponseEntity.ok(new ApiResponse<>(true, projects, "Projects filtered by status"));
     }
 
     @GetMapping("/search")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Search projects by name")
     public ResponseEntity<ApiResponse<List<ProjectSummaryDto>>> searchProjects(@RequestParam String name) {
-        List<Project> projects = projectService.searchProjectsByName(name);
-        List<ProjectSummaryDto> projectDtos = projects.stream()
-                .map(projectMapper::toSummaryDto)
-                .toList();
+        List<ProjectSummaryDto> projectDtos = projectService.searchProjectsByName(name);
         return ResponseEntity.ok(new ApiResponse<>(true, projectDtos, "Project search results"));
     }
 
@@ -122,10 +116,7 @@ public class ProjectControllerV1 {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get list of overdue projects")
     public ResponseEntity<ApiResponse<List<ProjectSummaryDto>>> getOverdueProjects() {
-        List<Project> projects = projectService.getOverdueProjects();
-        List<ProjectSummaryDto> projectDtos = projects.stream()
-                .map(projectMapper::toSummaryDto)
-                .toList();
+        List<ProjectSummaryDto> projectDtos = projectService.getOverdueProjects();
         return ResponseEntity.ok(new ApiResponse<>(true, projectDtos, "Overdue projects fetched"));
     }
 
@@ -133,19 +124,15 @@ public class ProjectControllerV1 {
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_MANAGER')")
     @Operation(summary = "Mark project as completed")
     public ResponseEntity<ApiResponse<ProjectResponseDto>> markAsCompleted(@PathVariable Long id) {
-        Project project = projectService.markAsCompleted(id);
-        ProjectResponseDto responseDto = projectMapper.toResponseDto(project);
+        ProjectResponseDto responseDto = projectService.markAsCompleted(id);
         return ResponseEntity.ok(new ApiResponse<>(true, responseDto, "Project marked as completed"));
     }
 
     @GetMapping("/stats/count-by-status")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Get project count by status")
-    public ResponseEntity<ApiResponse<java.util.Map<ProjectStatus, Long>>> getProjectCountsByStatus() {
-        java.util.Map<ProjectStatus, Long> counts = new java.util.HashMap<>();
-        for (ProjectStatus status : ProjectStatus.values()) {
-            counts.put(status, projectService.getProjectCountByStatus(status));
-        }
+    public ResponseEntity<ApiResponse<Map<ProjectStatus, Long>>> getProjectCountsByStatus() {
+        java.util.Map<ProjectStatus, Long> counts = projectService.getProjectCountsByStatus();
         return ResponseEntity.ok(new ApiResponse<>(true, counts, "Project counts by status retrieved"));
     }
 }
