@@ -19,7 +19,7 @@ public interface ProjectService {
 
     Page<ProjectSummaryDto> getProjectsByStatus(ProjectStatus status, Pageable pageable);
 
-    Project updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status);
+    ProjectResponseDto updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status);
 
     void deleteProject(Long id);
 
