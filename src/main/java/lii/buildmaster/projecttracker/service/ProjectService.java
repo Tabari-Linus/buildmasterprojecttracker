@@ -1,33 +1,36 @@
 package lii.buildmaster.projecttracker.service;
 
 import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
-import lii.buildmaster.projecttracker.model.entity.Project;
+import lii.buildmaster.projecttracker.model.dto.summary.ProjectSummaryDto;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface ProjectService {
 
-    Project createProject(String name, String description, LocalDateTime deadline, ProjectStatus status);
+    ProjectResponseDto createProject(String name, String description, LocalDateTime deadline, ProjectStatus status);
 
-    Page<Project> getAllProjects(Pageable pageable);
+    Page<ProjectSummaryDto> getAllProjects(Pageable pageable);
 
     ProjectResponseDto getProjectById(Long id);
 
-    Page<ProjectResponseDto> getProjectsByStatus(ProjectStatus status, Pageable pageable);
+    Page<ProjectSummaryDto> getProjectsByStatus(ProjectStatus status, Pageable pageable);
 
-    Project updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status);
+    ProjectResponseDto updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status);
 
     void deleteProject(Long id);
 
-    List<Project> getOverdueProjects();
+    List<ProjectSummaryDto> getOverdueProjects();
 
     long getProjectCountByStatus(ProjectStatus status);
 
-    List<Project> searchProjectsByName(String name);
+    List<ProjectSummaryDto> searchProjectsByName(String name);
 
-    Project markAsCompleted(Long id);
+    ProjectResponseDto markAsCompleted(Long id);
+
+    Map<ProjectStatus, Long> getProjectCountsByStatus();
 }

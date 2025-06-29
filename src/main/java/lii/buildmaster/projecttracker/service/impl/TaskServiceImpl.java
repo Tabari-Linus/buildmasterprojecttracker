@@ -6,9 +6,10 @@ import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
 import lii.buildmaster.projecttracker.exception.TaskNotFoundException;
 import lii.buildmaster.projecttracker.mapper.ProjectMapper;
 import lii.buildmaster.projecttracker.mapper.TaskMapper;
+import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
 import lii.buildmaster.projecttracker.model.dto.request.TaskRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.TaskResponseDto;
-import lii.buildmaster.projecttracker.model.dto.summary.DeveloperSummaryDto;
+import lii.buildmaster.projecttracker.model.dto.summary.TaskSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.entity.Task;
@@ -30,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -46,8 +48,7 @@ public class TaskServiceImpl implements TaskService {
     private final DeveloperRepository developerRepository;
     private final TaskMapper taskMapper;
     private final ProjectMapper projectMapper;
-
-
+    private final DeveloperMapper developerMapper;
 
     @Override
     @Auditable(action = ActionType.CREATE, entityType = EntityType.TASK)
@@ -66,54 +67,31 @@ public class TaskServiceImpl implements TaskService {
                     .orElseThrow(() -> new DeveloperNotFoundException(taskRequestDto.getDeveloperId()));
         }
 
-        Task task = new Task(taskRequestDto.getTitle(), taskRequestDto.getDescription(), taskRequestDto.getStatus(), taskRequestDto.getDueDate(), project, developer);
-        taskRepository.save(task);
+        Task task = taskMapper.toEntity(taskRequestDto);
+        task.setProject(project);
+        task.setDeveloper(developer);
 
-        // Map the created task to response DTO, leveraging the taskMapper
-        // This will be further optimized when we introduce MapStruct for DTO mapping
-        return taskMapper.toResponseDto(task);
+        Task savedTask = taskRepository.save(task);
+
+        return taskMapper.toResponseDto(savedTask);
     }
-
-    // This private helper method can be simplified or removed once DTO mapping is fully handled by MapStruct
-    // It's currently manually mapping relationships, which MapStruct will automate.
-    // Keeping it for now but noting it for future refactoring.
-    private TaskResponseDto getTaskResponseDto(Task task, TaskResponseDto responseDto) {
-        // This line assumes projectMapper.toSummaryDto can handle a LAZY loaded Project
-        // If Project is not eagerly fetched, this might cause LazyInitializationException
-        // when accessed outside a transaction or without an @EntityGraph.
-        // With Task.project now LAZY, the findAllWithProject and findByIdWithProjectAndDeveloper
-        // methods will ensure this is loaded.
-        responseDto.setProject(projectMapper.toSummaryDto(task.getProject()));
-
-        if (task.getDeveloper() != null) {
-            DeveloperSummaryDto devSummary = new DeveloperSummaryDto();
-            devSummary.setId(task.getDeveloper().getId());
-            devSummary.setName(task.getDeveloper().getName());
-            responseDto.setDeveloper(devSummary);
-        } else {
-            responseDto.setDeveloper(null);
-        }
-
-        return responseDto;
-    }
-
 
     @Override
     @Transactional(readOnly = true)
     public Page<TaskResponseDto> getAllTasks(Pageable pageable) {
-        // Reverted to standard findAll as EntityGraph methods were causing issues.
-        // We will address eager fetching through DTO projections (next step) or custom queries.
-        List<TaskResponseDto> taskResponseDtos = taskRepository.findAll(pageable).stream()
-                .map(taskMapper::toResponseDto)
+        Page<Task> tasksPage = taskRepository.findAll(pageable);
+        List<TaskResponseDto> taskResponseDtos = tasksPage.getContent().stream()
+                .map(this::mapTaskToResponseDtoWithCalculatedFields)
                 .collect(Collectors.toList());
-        return new PageImpl<>(taskResponseDtos, pageable, taskRepository.count());
+        return new PageImpl<>(taskResponseDtos, pageable, tasksPage.getTotalElements());
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "'all'")
     public List<Task> getAllTask() {
-        // Reverted to standard findAll
+
+
         return taskRepository.findAll();
     }
 
@@ -121,10 +99,9 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "#id")
     public TaskResponseDto getTaskById(Long id) {
-        // Reverted to standard findById
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
-        return taskMapper.toResponseDto(task);
+        return mapTaskToResponseDtoWithCalculatedFields(task);
     }
 
     @Override
@@ -143,8 +120,8 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(status);
         task.setDueDate(dueDate);
 
-        Task created = taskRepository.save(task);
-        return taskMapper.toResponseDto(created);
+        Task updatedTask = taskRepository.save(task);
+        return mapTaskToResponseDtoWithCalculatedFields(updatedTask);
     }
 
     @Override
@@ -158,9 +135,7 @@ public class TaskServiceImpl implements TaskService {
     public void deleteTask(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
-
         taskRepository.deleteById(id);
-
     }
 
     @Override
@@ -180,7 +155,6 @@ public class TaskServiceImpl implements TaskService {
 
         task.setDeveloper(developer);
         return taskRepository.save(task);
-
     }
 
     @Override
@@ -197,14 +171,12 @@ public class TaskServiceImpl implements TaskService {
 
         task.setDeveloper(null);
         return taskRepository.save(task);
-
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "'project_' + #projectId")
     public List<Task> getTasksByProject(Long projectId) {
-        // Reverted to standard findByProjectId
         return taskRepository.findByProjectId(projectId);
     }
 
@@ -212,7 +184,6 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     @Cacheable(value = "tasks", key = "'developer_' + #developerId")
     public List<Task> getTasksByDeveloper(Long developerId) {
-        // Reverted to standard findByDeveloperId
         return taskRepository.findByDeveloperId(developerId);
     }
 
@@ -357,5 +328,34 @@ public class TaskServiceImpl implements TaskService {
     @Cacheable(value = "tasks", key = "'overdue_projects'")
     public List<Task> getTasksInOverdueProjects() {
         return taskRepository.findTasksInOverdueProjects(LocalDateTime.now());
+    }
+
+
+    private TaskResponseDto mapTaskToResponseDtoWithCalculatedFields(Task task) {
+        TaskResponseDto dto = taskMapper.toResponseDto(task);
+
+        if (task.getDueDate() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            dto.setOverdue(task.getDueDate().isBefore(now));
+            Duration duration = Duration.between(now, task.getDueDate());
+            dto.setDaysUntilDue(duration.toDays());
+        } else {
+            dto.setOverdue(false);
+            dto.setDaysUntilDue(0L);
+        }
+        return dto;
+    }
+
+
+    private TaskSummaryDto mapTaskToSummaryDtoWithCalculatedFields(Task task) {
+        TaskSummaryDto dto = taskMapper.toSummaryDto(task);
+
+        if (task.getDueDate() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            dto.setOverdue(task.getDueDate().isBefore(now));
+        } else {
+            dto.setOverdue(false);
+        }
+        return dto;
     }
 }

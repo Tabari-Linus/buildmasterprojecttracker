@@ -6,6 +6,7 @@ import lii.buildmaster.projecttracker.exception.EmailAlreadyExistsException;
 import lii.buildmaster.projecttracker.mapper.DeveloperMapper;
 import lii.buildmaster.projecttracker.model.dto.request.DeveloperRequestDto;
 import lii.buildmaster.projecttracker.model.dto.response.DeveloperResponseDto;
+import lii.buildmaster.projecttracker.model.dto.summary.DeveloperSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Developer;
 import lii.buildmaster.projecttracker.model.entity.Role;
 import lii.buildmaster.projecttracker.model.entity.User;
@@ -15,6 +16,7 @@ import lii.buildmaster.projecttracker.service.DeveloperService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.*;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -32,6 +35,7 @@ public class DeveloperServiceImpl implements DeveloperService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final DeveloperMapper developerMapper;
+    private final TaskRepository taskRepository;
 
 
     @Override
@@ -45,7 +49,7 @@ public class DeveloperServiceImpl implements DeveloperService {
             throw new EmailAlreadyExistsException("Developer with email already exists: " + dto.getEmail());
         }
 
-        Developer dev = new Developer(dto.getName(), dto.getEmail(), dto.getSkills());
+        Developer dev = developerMapper.toEntity(dto);
         dev.setUser(user);
         developerRepository.save(dev);
     }
@@ -53,8 +57,12 @@ public class DeveloperServiceImpl implements DeveloperService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "developers", key = "'all'", unless = "#result.isEmpty()")
-    public Page<Developer> getAllDevelopers(Pageable pageable) {
-        return developerRepository.findAll(pageable);
+    public Page<DeveloperSummaryDto> getAllDevelopers(Pageable pageable) {
+        Page<Developer> developerPage = developerRepository.findAll(pageable);
+        List<DeveloperSummaryDto> dtoList = developerPage.getContent().stream()
+                .map(this::mapDeveloperToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtoList, pageable, developerPage.getTotalElements());
     }
 
     @Override
@@ -63,15 +71,16 @@ public class DeveloperServiceImpl implements DeveloperService {
     public DeveloperResponseDto getDeveloperById(Long id) {
         Developer dev = developerRepository.findById(id)
                 .orElseThrow(() -> new DeveloperNotFoundException("Developer not found with id: " + id));
-        return new DeveloperResponseDto(dev.getId(), dev.getName(), dev.getEmail(), dev.getSkills());
+        return mapDeveloperToResponseDtoWithCalculatedFields(dev);
     }
 
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "developers", key = "'email_' + #email")
-    public Developer getDeveloperByEmail(String email) {
-        return developerRepository.findByEmail(email)
+    public DeveloperResponseDto getDeveloperByEmail(String email) {
+        Developer developer = developerRepository.findByEmail(email)
                 .orElseThrow(() -> new DeveloperNotFoundException("Developer not found with email: " + email));
+        return mapDeveloperToResponseDtoWithCalculatedFields(developer);
     }
 
     @Override
@@ -96,7 +105,6 @@ public class DeveloperServiceImpl implements DeveloperService {
             throw new EmailAlreadyExistsException("User with email already exists: " + dto.getEmail());
         }
         if (!existingUser.getEmail().equals(dto.getEmail())) {
-
             existingUser.setEmail(dto.getEmail());
             userRepository.save(existingUser);
         }
@@ -106,7 +114,7 @@ public class DeveloperServiceImpl implements DeveloperService {
         developer.setSkills(dto.getSkills());
 
         Developer savedDev = developerRepository.save(developer);
-        return developerMapper.toResponseDto(savedDev);
+        return mapDeveloperToResponseDtoWithCalculatedFields(savedDev);
     }
 
 
@@ -121,13 +129,13 @@ public class DeveloperServiceImpl implements DeveloperService {
     public void deleteDeveloper(Long id) {
         Developer developer = developerRepository.findById(id)
                 .orElseThrow(() -> new DeveloperNotFoundException("Developer not found with id: " + id));
-        if (developer == null) {
-            throw new DeveloperNotFoundException("Developer not found with id: " + id);
-        }
 
-        if (developer.getAssignedTask() != null) {
-            throw new IllegalStateException("Cannot delete developer with assigned tasks.");
-        }
+
+
+
+
+        taskRepository.findByDeveloperId(id).forEach(task -> task.setDeveloper(null));
+
 
         if (developer.getUser() != null) {
             userRepository.delete(developer.getUser());
@@ -137,16 +145,22 @@ public class DeveloperServiceImpl implements DeveloperService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "developers", key = "'search_name_' + #name")
-    public List<Developer> searchDevelopersByName(String name) {
-        return developerRepository.findByNameContainingIgnoreCase(name);
+    @Cacheable(value = "developers", key = "'search_name_' + #name", unless = "#result.isEmpty()")
+    public List<DeveloperSummaryDto> searchDevelopersByName(String name) {
+        List<Developer> developers = developerRepository.findByNameContainingIgnoreCase(name);
+        return developers.stream()
+                .map(this::mapDeveloperToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "developers", key = "'skill_' + #skill")
-    public List<Developer> findDevelopersBySkill(String skill) {
-        return developerRepository.findBySkillsContainingIgnoreCase(skill);
+    @Cacheable(value = "developers", key = "'skill_' + #skill", unless = "#result.isEmpty()")
+    public List<DeveloperSummaryDto> findDevelopersBySkill(String skill) {
+        List<Developer> developers = developerRepository.findBySkillsContainingIgnoreCase(skill);
+        return developers.stream()
+                .map(this::mapDeveloperToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -158,5 +172,32 @@ public class DeveloperServiceImpl implements DeveloperService {
     @Cacheable(value = "developerStats", key = "'total_count'")
     public long getTotalDeveloperCount() {
         return developerRepository.count();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "developers", key = "'active_task_count'", unless = "#result.isEmpty()")
+    public Page<DeveloperSummaryDto> getDevelopersWithActiveTaskCount(Pageable pageable) {
+        Page<Developer> developerPage = developerRepository.findAll(pageable);
+        List<DeveloperSummaryDto> dtoList = developerPage.getContent().stream()
+                .map(this::mapDeveloperToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtoList, pageable, developerPage.getTotalElements());
+    }
+
+
+    private DeveloperResponseDto mapDeveloperToResponseDtoWithCalculatedFields(Developer developer) {
+        DeveloperResponseDto dto = developerMapper.toResponseDto(developer);
+        dto.setTotalTaskCount(taskRepository.countByDeveloperId(developer.getId()));
+        dto.setActiveTaskCount(taskRepository.countByDeveloperIdAndStatusIn(developer.getId(), Set.of(TaskStatus.TODO, TaskStatus.IN_PROGRESS)));
+        dto.setCompletedTaskCount(taskRepository.countByDeveloperIdAndStatus(developer.getId(), TaskStatus.DONE));
+        return dto;
+    }
+
+
+    private DeveloperSummaryDto mapDeveloperToSummaryDtoWithCalculatedFields(Developer developer) {
+        DeveloperSummaryDto dto = developerMapper.toSummaryDto(developer);
+        dto.setActiveTaskCount(taskRepository.countByDeveloperIdAndStatusIn(developer.getId(), Set.of(TaskStatus.TODO, TaskStatus.IN_PROGRESS)));
+        return dto;
     }
 }

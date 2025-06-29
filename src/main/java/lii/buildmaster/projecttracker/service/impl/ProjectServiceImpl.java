@@ -2,16 +2,16 @@ package lii.buildmaster.projecttracker.service.impl;
 
 import lii.buildmaster.projecttracker.annotation.Auditable;
 import lii.buildmaster.projecttracker.exception.ProjectNotFoundException;
-import lii.buildmaster.projecttracker.exception.UnauthorizedException;
 import lii.buildmaster.projecttracker.mapper.ProjectMapper;
+import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
+import lii.buildmaster.projecttracker.repository.jpa.TaskRepository;
+import lii.buildmaster.projecttracker.service.ProjectService;
 import lii.buildmaster.projecttracker.model.dto.response.ProjectResponseDto;
+import lii.buildmaster.projecttracker.model.dto.summary.ProjectSummaryDto;
 import lii.buildmaster.projecttracker.model.entity.Project;
 import lii.buildmaster.projecttracker.model.enums.ActionType;
 import lii.buildmaster.projecttracker.model.enums.EntityType;
 import lii.buildmaster.projecttracker.model.enums.ProjectStatus;
-import lii.buildmaster.projecttracker.repository.jpa.ProjectRepository;
-import lii.buildmaster.projecttracker.service.ProjectService;
-import lii.buildmaster.projecttracker.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -24,13 +24,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
+@RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final TaskRepository taskRepository;
     private final ProjectMapper projectMapper;
 
     @Override
@@ -39,28 +42,22 @@ public class ProjectServiceImpl implements ProjectService {
             @CacheEvict(value = "projects", allEntries = true),
             @CacheEvict(value = "projectStats", allEntries = true)
     })
-    public Project createProject(String name, String description, LocalDateTime deadline, ProjectStatus status) {
+    public ProjectResponseDto createProject(String name, String description, LocalDateTime deadline, ProjectStatus status) {
         Project project = new Project(name, description, deadline, status);
-        return projectRepository.save(project);
+        Project savedProject = projectRepository.save(project);
+        return mapProjectToResponseDtoWithCalculatedFields(savedProject);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "projects", key = "'paged_all_' + #pageable.pageNumber + '_' + #pageable.pageSize")
-    public Page<Project> getAllProjects(Pageable pageable) {
-        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            return projectRepository.findAll(pageable);
-        } else if (SecurityUtils.isDeveloper()) {
-            String username = SecurityUtils.getCurrentUsername();
-            List<Project> projects = projectRepository.findProjectsByDeveloperUsername(username, pageable);
-            return new PageImpl<>(projects, pageable, projects.size());
-        } else if (SecurityUtils.isContractor()) {
-            return projectRepository.findAll(pageable);
-        } else {
-            throw new UnauthorizedException("You don't have permission to view projects");
-        }
+    @Cacheable(value = "projects", key = "'all'", unless = "#result.isEmpty()")
+    public Page<ProjectSummaryDto> getAllProjects(Pageable pageable) {
+        Page<Project> projectPage = projectRepository.findAll(pageable);
+        List<ProjectSummaryDto> dtoList = projectPage.getContent().stream()
+                .map(this::mapProjectToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtoList, pageable, projectPage.getTotalElements());
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -68,44 +65,28 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectResponseDto getProjectById(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
-
-        if (SecurityUtils.isContractor()) {
-            return projectMapper.toSummaryResponseDto(project);
-        }
-
-        return projectMapper.toResponseDto(project);
+        return mapProjectToResponseDtoWithCalculatedFields(project);
     }
-
-
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "projects", key = "'status_' + #status.name()")
-    public Page<ProjectResponseDto> getProjectsByStatus(ProjectStatus status, Pageable pageable) {
-        Page<Project> projects;
-
-        if (SecurityUtils.isAdmin() || SecurityUtils.isManager()) {
-            projects = projectRepository.findByStatus(status, pageable);
-        } else if (SecurityUtils.isDeveloper()) {
-            String username = SecurityUtils.getCurrentUsername();
-            projects = projectRepository.findByStatusAndDeveloperUsername(status, username, pageable);
-        } else if (SecurityUtils.isContractor()) {
-            projects = projectRepository.findByStatus(status, pageable);
-        } else {
-            throw new UnauthorizedException("You don't have permission to view projects");
-        }
-
-        return projects.map(projectMapper::toResponseDto);
+    @Cacheable(value = "projects", key = "'status_' + #status.name()", unless = "#result.isEmpty()")
+    public Page<ProjectSummaryDto> getProjectsByStatus(ProjectStatus status, Pageable pageable) {
+        Page<Project> projectPage = projectRepository.findByStatus(status, pageable);
+        List<ProjectSummaryDto> dtoList = projectPage.getContent().stream()
+                .map(this::mapProjectToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
+        return new PageImpl<>(dtoList, pageable, projectPage.getTotalElements());
     }
 
     @Override
     @Auditable(action = ActionType.UPDATE, entityType = EntityType.PROJECT)
     @Caching(evict = {
             @CacheEvict(value = "projects", key = "#id"),
-            @CacheEvict(value = "projects", key = "'all'"),
+            @CacheEvict(value = "projects", allEntries = true),
             @CacheEvict(value = "projectStats", allEntries = true)
     })
-    public Project updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status) {
+    public ProjectResponseDto updateProject(Long id, String name, String description, LocalDateTime deadline, ProjectStatus status) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
@@ -114,7 +95,8 @@ public class ProjectServiceImpl implements ProjectService {
         project.setDeadline(deadline);
         project.setStatus(status);
 
-        return projectRepository.save(project);
+        Project updatedProject = projectRepository.save(project);
+        return mapProjectToResponseDtoWithCalculatedFields(updatedProject);
     }
 
     @Override
@@ -129,42 +111,82 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
+
+
+
+
+
         projectRepository.delete(project);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "projects", key = "'overdue'")
-    public List<Project> getOverdueProjects() {
-        return projectRepository.findOverdueProjects(LocalDateTime.now());
+    @Cacheable(value = "projects", key = "'overdue'", unless = "#result.isEmpty()")
+    public List<ProjectSummaryDto> getOverdueProjects() {
+        List<Project> projects = projectRepository.findOverdueProjects(LocalDateTime.now());
+        return projects.stream()
+                .map(this::mapProjectToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "projectStats", key = "'count_' + #status.name()")
+    @Cacheable(value = "projectStats", key = "'count_status_' + #status.name()")
     public long getProjectCountByStatus(ProjectStatus status) {
         return projectRepository.countByStatus(status);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "projects", key = "'search_' + #name")
-    public List<Project> searchProjectsByName(String name) {
-        return projectRepository.findByNameContainingIgnoreCase(name);
+    @Cacheable(value = "projects", key = "'search_name_' + #name", unless = "#result.isEmpty()")
+    public List<ProjectSummaryDto> searchProjectsByName(String name) {
+        List<Project> projects = projectRepository.findByNameContainingIgnoreCase(name);
+        return projects.stream()
+                .map(this::mapProjectToSummaryDtoWithCalculatedFields)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Auditable(action = ActionType.STATUS_CHANGE, entityType = EntityType.PROJECT)
     @Caching(evict = {
             @CacheEvict(value = "projects", key = "#id"),
-            @CacheEvict(value = "projects", key = "'all'"),
+            @CacheEvict(value = "projects", allEntries = true),
             @CacheEvict(value = "projectStats", allEntries = true)
     })
-    public Project markAsCompleted(Long id) {
+    public ProjectResponseDto markAsCompleted(Long id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 
         project.setStatus(ProjectStatus.COMPLETED);
-        return projectRepository.save(project);
+        Project updatedProject = projectRepository.save(project);
+        return mapProjectToResponseDtoWithCalculatedFields(updatedProject);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = "projectStats", key = "'counts_by_status'")
+    public Map<ProjectStatus, Long> getProjectCountsByStatus() {
+        List<Object[]> results = projectRepository.getProjectCountsByStatus();
+        return results.stream()
+                .collect(Collectors.toMap(
+                        result -> (ProjectStatus) result[0],
+                        result -> (Long) result[1]
+                ));
+    }
+
+
+    private ProjectResponseDto mapProjectToResponseDtoWithCalculatedFields(Project project) {
+        ProjectResponseDto dto = projectMapper.toResponseDto(project);
+        dto.setTaskCount(taskRepository.countByProjectId(project.getId()));
+        dto.setCompletedTaskCount(taskRepository.countByProjectIdAndStatus(project.getId(), lii.buildmaster.projecttracker.model.enums.TaskStatus.DONE));
+        return dto;
+    }
+
+
+    private ProjectSummaryDto mapProjectToSummaryDtoWithCalculatedFields(Project project) {
+        ProjectSummaryDto dto = projectMapper.toSummaryDto(project);
+        dto.setTaskCount(taskRepository.countByProjectId(project.getId()));
+        dto.setCompletedTaskCount(taskRepository.countByProjectIdAndStatus(project.getId(), lii.buildmaster.projecttracker.model.enums.TaskStatus.DONE));
+        return dto;
     }
 }
