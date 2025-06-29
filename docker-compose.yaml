@@ -1,7 +1,4 @@
-# docker-compose.yml
-
 services:
-  # PostgreSQL Database (assuming you still want this in Docker for consistency)
   postgres:
     image: postgres:15-alpine
     container_name: buildmaster-postgres
@@ -23,7 +20,6 @@ services:
       timeout: 10s
       retries: 5
 
-  # MongoDB Database (assuming you still want this in Docker)
   mongodb:
     image: mongo:7.0
     container_name: buildmaster-mongo
@@ -70,9 +66,8 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
-      - prometheus # Ensure Prometheus is up before Grafana
+      - prometheus
 
-# Removed the 'app' service definition here as it's running locally
 
 volumes:
   postgres_data:
