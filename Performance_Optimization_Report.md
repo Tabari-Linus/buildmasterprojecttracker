@@ -220,3 +220,6 @@ The performance optimization has achieved **exceptional results**, transforming 
 ### Screenshots and visualizations of the performance improvements are available in the [docs/images](docs/images) directory.
 ![VisualVM Performance Analysis](docs/images/VisualVM%20after%205%20minutes%20after%20optimization.png)
 ![Heap Dump Analysis](docs/images/Heap%20Dump%20after%205%20minutes%20after%20optimization.png)
+
+### Grafana Dashboard
+![Grafana Dashboard](docs/images/grafana%20dashboard%20.png)
