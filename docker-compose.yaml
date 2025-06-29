@@ -1,5 +1,7 @@
+# docker-compose.yml
+
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (assuming you still want this in Docker for consistency)
   postgres:
     image: postgres:15-alpine
     container_name: buildmaster-postgres
@@ -21,7 +23,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # MongoDB Database
+  # MongoDB Database (assuming you still want this in Docker)
   mongodb:
     image: mongo:7.0
     container_name: buildmaster-mongo
@@ -45,76 +47,39 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.37.0
+    container_name: buildmaster-prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     networks:
       - buildmaster-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
 
   grafana:
     image: grafana/grafana:9.0.0
+    container_name: buildmaster-grafana
     environment:
+      - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     ports:
       - "3000:3000"
     networks:
       - buildmaster-network
-  # Spring Boot Application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: buildmaster-app
-    restart: unless-stopped
-    environment:
-      AVA_TOOL_OPTIONS: >
-        -Dcom.sun.management.jmxremote
-        -Dcom.sun.management.jmxremote.port=9010
-        -Dcom.sun.management.jmxremote.rmi.port=9010
-        -Dcom.sun.management.jmxremote.ssl=false
-        -Dcom.sun.management.jmxremote.authenticate=false
-        -Djava.rmi.server.hostname=127.0.0.1
-
-      # PostgreSQL Configuration
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/buildmaster_db
-      SPRING_DATASOURCE_USERNAME: mrlii
-      SPRING_DATASOURCE_PASSWORD: buildmaster@v1
-
-      # MongoDB Configuration
-      SPRING_DATA_MONGODB_HOST: mongodb
-      SPRING_DATA_MONGODB_PORT: 27017
-      SPRING_DATA_MONGODB_DATABASE: buildmaster_audit
-
-      # JPA Configuration
-      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
-      SPRING_JPA_SHOW_SQL: false
-
-      # Logging Configuration
-      LOGGING_LEVEL_COM_BUILDMASTER_PROJECTTRACKER: INFO
-      LOGGING_LEVEL_ORG_HIBERNATE_SQL: WARN
-
-      # Cache Configuration
-      SPRING_CACHE_TYPE: caffeine
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-    networks:
-      - buildmaster-network
     volumes:
-      - app_logs:/app/logs
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus # Ensure Prometheus is up before Grafana
 
+# Removed the 'app' service definition here as it's running locally
 
 volumes:
   postgres_data:
     driver: local
   mongodb_data:
     driver: local
-  app_logs:
+  grafana_data:
     driver: local
 
 networks:
