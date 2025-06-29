@@ -20,13 +20,12 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class DeveloperControllerV1Test{
+class DeveloperControllerV1Test {
 
     @Mock private DeveloperService developerService;
     @Mock private DeveloperMapper developerMapper;
@@ -63,11 +62,11 @@ class DeveloperControllerV1Test{
         testSummaryDto.setName("John Doe");
         testSummaryDto.setEmail("john.doe@example.com");
     }
+
     @Test
     void getAllDevelopers_Success() {
         Pageable pageable = PageRequest.of(0, 10);
-        List<Developer> developers = List.of(testDeveloper);
-        when(developerService.getAllDevelopers(pageable)).thenReturn(new PageImpl<>(developers));
+        when(developerService.getAllDevelopers(pageable)).thenReturn(new PageImpl<>(List.of(testSummaryDto)));
         when(developerMapper.toSummaryDto(testDeveloper)).thenReturn(testSummaryDto);
 
         var response = developerController.getAllDevelopers(pageable);
@@ -80,7 +79,6 @@ class DeveloperControllerV1Test{
     @Test
     void getDeveloperById_Success() {
         when(developerService.getDeveloperById(1L)).thenReturn(testResponseDto);
-        when(developerMapper.toResponseDto(testDeveloper)).thenReturn(testResponseDto);
 
         var response = developerController.getDeveloperById(1L);
 
@@ -92,8 +90,7 @@ class DeveloperControllerV1Test{
     @Test
     void getDeveloperByEmail_Found() {
         when(developerService.getDeveloperByEmail("john.doe@example.com"))
-                .thenReturn(testDeveloper);
-        when(developerMapper.toResponseDto(testDeveloper)).thenReturn(testResponseDto);
+                .thenReturn(testResponseDto);
 
         var response = developerController.getDeveloperByEmail("john.doe@example.com");
 
@@ -112,11 +109,9 @@ class DeveloperControllerV1Test{
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
-
     @Test
     void updateDeveloper_Success() {
         when(developerService.updateDeveloper(1L, testRequestDto)).thenReturn(testResponseDto);
-        when(developerMapper.toResponseDto(testDeveloper)).thenReturn(testResponseDto);
 
         var response = developerController.updateDeveloper(1L, testRequestDto);
 
@@ -136,8 +131,7 @@ class DeveloperControllerV1Test{
 
     @Test
     void searchByName_Success() {
-        when(developerService.searchDevelopersByName("John")).thenReturn(List.of(testDeveloper));
-        when(developerMapper.toSummaryDto(testDeveloper)).thenReturn(testSummaryDto);
+        when(developerService.searchDevelopersByName("John")).thenReturn(List.of(testSummaryDto));
 
         var response = developerController.searchByName("John");
 
@@ -148,8 +142,7 @@ class DeveloperControllerV1Test{
 
     @Test
     void searchBySkill_Success() {
-        when(developerService.findDevelopersBySkill("Java")).thenReturn(List.of(testDeveloper));
-        when(developerMapper.toSummaryDto(testDeveloper)).thenReturn(testSummaryDto);
+        when(developerService.findDevelopersBySkill("Java")).thenReturn(List.of(testSummaryDto));
 
         var response = developerController.searchBySkill("Java");
 
