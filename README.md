@@ -13,7 +13,7 @@ A Spring Boot  REST API featuring hybrid database architecture (PostgreSQL + Mon
 
 BuildMaster Project Tracker is an project management system that provides a user with the functionality of tracking of projects, developers, and tasks, updating entries and extra features for logging audits, caching and summary analysis of projects task and developers.
 
-### Key Features 🤩
+### Key Features 
 
 - **Complete Project Tracker** for Projects, Developers, and Tasks
 - **Advanced JPA Relationships** with proper cascade operations
